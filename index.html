@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>NEON SLOPE — Infinite Descent</title>
+<title>NEON SLOPE — Shattered Track</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --void:#020617;
-    --track:#0f172a;
+    --void:#000000;
+    --track:#0a0a0a;
     --cyan:#06b6d4;
-    --green:#22c55e;
+    --green:#10b981;
     --red:#ef4444;
     --ink:#dceeff;
-    --panel-border: rgba(6,182,212,0.45);
+    --panel-border: rgba(16, 185, 129, 0.45);
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -53,48 +53,23 @@
   .hud-stat--right{ align-items:flex-end; }
   .hud-label{
     font-size:11px; letter-spacing:3px; font-weight:600;
-    color:var(--cyan); opacity:0.85; text-shadow:0 0 8px rgba(6,182,212,0.8);
+    color:var(--green); opacity:0.85; text-shadow:0 0 8px rgba(16,185,129,0.8);
   }
   .hud-value{
     font-family:'Orbitron',sans-serif;
     font-size:clamp(22px,5vw,32px); font-weight:800;
     color:#eafff3;
-    text-shadow:0 0 12px rgba(34,197,94,0.75), 0 0 2px #fff;
+    text-shadow:0 0 12px rgba(16,185,129,0.75), 0 0 2px #fff;
     line-height:1.1;
   }
   #best-value{ color:#bff2ff; text-shadow:0 0 12px rgba(6,182,212,0.8); }
-
-  .speed-gauge{
-    align-self:center;
-    width:min(320px, 70vw);
-    height:14px;
-    border-radius:8px;
-    background:rgba(15,23,42,0.75);
-    border:1px solid var(--panel-border);
-    overflow:hidden;
-    position:relative;
-    box-shadow: 0 0 14px rgba(6,182,212,0.25) inset;
-  }
-  .speed-fill{
-    height:100%; width:0%;
-    background:linear-gradient(90deg, var(--green), var(--cyan) 60%, var(--red));
-    box-shadow:0 0 12px rgba(6,182,212,0.9);
-    transition:width 0.08s linear;
-  }
-  .speed-text{
-    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
-    font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700;
-    color:#eafff3; letter-spacing:1px; white-space:nowrap;
-    text-shadow:0 0 8px rgba(34,197,94,0.7);
-  }
-  .speed-text small{ font-size:9px; opacity:0.7; letter-spacing:1px; }
 
   /* ---------- Overlays ---------- */
   .overlay{
     position:fixed; inset:0; z-index:20;
     display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(ellipse at center, rgba(6,20,40,0.55), rgba(2,6,23,0.92));
-    backdrop-filter: blur(3px);
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0.75), rgba(0,0,0,0.95));
+    backdrop-filter: blur(4px);
     transition:opacity 0.25s ease;
     padding:20px;
   }
@@ -103,9 +78,9 @@
     width:min(420px, 100%);
     padding:32px 28px 26px;
     border-radius:18px;
-    background:rgba(9,16,32,0.82);
+    background:rgba(5,5,5,0.9);
     border:1px solid var(--panel-border);
-    box-shadow: 0 0 0 1px rgba(6,182,212,0.08), 0 0 40px rgba(6,182,212,0.18), 0 0 70px rgba(34,197,94,0.08);
+    box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 0 40px rgba(16,185,129,0.15);
     text-align:center;
   }
 
@@ -116,61 +91,49 @@
     letter-spacing:4px;
     margin:0 0 4px;
     color:#eafff5;
-    text-shadow: 0 0 10px rgba(34,197,94,0.9), 0 0 26px rgba(34,197,94,0.4);
+    text-shadow: 0 0 10px rgba(16,185,129,0.9), 0 0 26px rgba(16,185,129,0.4);
   }
-  .title span{
-    color:var(--cyan);
-    text-shadow: 0 0 10px rgba(6,182,212,1), 0 0 30px rgba(6,182,212,0.5);
-  }
-  .title--sm{ font-size:clamp(22px,6vw,30px); letter-spacing:3px; color:var(--red);
-    text-shadow:0 0 10px rgba(239,68,68,0.85), 0 0 26px rgba(239,68,68,0.4); }
-
-  .subtitle{
-    margin:0 0 22px;
-    font-size:14px; letter-spacing:5px; text-transform:uppercase;
-    color:#7fb8cf; opacity:0.8;
-  }
-
-  .controls-hint{
-    font-size:15px; color:#bfe4ff; margin:0 0 18px; letter-spacing:0.5px;
-  }
+  .title span{ color:var(--cyan); text-shadow: 0 0 10px rgba(6,182,212,1); }
+  
+  .subtitle{ margin:0 0 22px; font-size:14px; letter-spacing:5px; text-transform:uppercase; color:#7fb8cf; opacity:0.8; }
+  .controls-hint{ font-size:15px; color:#bfe4ff; margin:0 0 18px; letter-spacing:0.5px; }
   kbd{
     display:inline-block; min-width:22px; padding:3px 7px; margin:0 2px;
     border-radius:5px; border:1px solid var(--panel-border);
-    background:rgba(6,182,212,0.08); color:#e6fbff;
-    font-family:'Orbitron',sans-serif; font-size:12px;
-    box-shadow:0 0 8px rgba(6,182,212,0.25) inset;
+    background:rgba(6,182,212,0.08); color:#e6fbff; font-family:'Orbitron',sans-serif; font-size:12px;
   }
 
   .btn{
     display:block; width:100%;
     font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:2px; font-size:15px;
     padding:15px 18px; margin-top:12px;
-    border-radius:10px; border:1px solid rgba(34,197,94,0.7);
-    background:linear-gradient(180deg, rgba(34,197,94,0.18), rgba(34,197,94,0.06));
+    border-radius:10px; border:1px solid rgba(16,185,129,0.7);
+    background:linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0.06));
     color:#eafff3; cursor:pointer;
-    box-shadow:0 0 18px rgba(34,197,94,0.25);
-    transition:transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    box-shadow:0 0 18px rgba(16,185,129,0.25);
+    transition:transform 0.1s, box-shadow 0.1s;
   }
-  .btn:hover{ box-shadow:0 0 26px rgba(34,197,94,0.5); transform:translateY(-1px); }
-  .btn:active{ transform:translateY(0); box-shadow:0 0 12px rgba(34,197,94,0.4); }
-  .btn--primary{ }
+  .btn:active{ transform:translateY(2px); box-shadow:0 0 8px rgba(16,185,129,0.4); }
+  .btn--alt{ border-color:var(--cyan); background:rgba(6,182,212,0.1); box-shadow:0 0 18px rgba(6,182,212,0.2); }
 
-  .fine-print{
-    margin:16px 0 0; font-size:12px; letter-spacing:1px; color:#6f93a8; min-height:14px;
+  .fine-print{ margin:16px 0 0; font-size:12px; letter-spacing:1px; color:#6f93a8; min-height:14px; }
+
+  /* Gyro Calibrator */
+  .calibration-box{
+    margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 8px;
+    border: 1px dashed var(--cyan);
+  }
+  .tilt-meter{
+    width: 100%; height: 20px; background: #222; border-radius: 10px; position: relative; overflow: hidden; margin-top: 10px;
+  }
+  .tilt-indicator{
+    width: 4px; height: 100%; background: var(--cyan); position: absolute; left: 50%; transform: translateX(-50%);
+    box-shadow: 0 0 10px var(--cyan); transition: left 0.05s linear;
+  }
+  .tilt-center-mark{
+    width: 2px; height: 100%; background: red; position: absolute; left: 50%; transform: translateX(-50%); opacity: 0.5;
   }
 
-  .stats-row{
-    display:flex; justify-content:center; gap:36px; margin:6px 0 6px;
-  }
-  .stats-row > div{ display:flex; flex-direction:column; gap:2px; }
-  .stats-row .hud-value{ color:#eafff3; }
-
-  .new-best{
-    font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; letter-spacing:3px;
-    color:var(--green); text-shadow:0 0 10px rgba(34,197,94,0.8);
-    margin:10px 0 0;
-  }
 </style>
 </head>
 <body>
@@ -184,51 +147,67 @@
         <span class="hud-value" id="score-value">0</span>
       </div>
       <div class="hud-stat hud-stat--right">
-        <span class="hud-label">BEST</span>
-        <span class="hud-value" id="best-value">0</span>
+        <span class="hud-label">SPEED</span>
+        <span class="hud-value" id="speed-value" style="color:var(--cyan);">0</span>
       </div>
-    </div>
-    <div class="speed-gauge">
-      <span class="speed-text" id="speed-text">0 <small>km/h</small></span>
-      <div class="speed-fill" id="speed-fill"></div>
     </div>
   </div>
 
+  <!-- START SCREEN -->
   <div id="start-screen" class="overlay">
     <div class="overlay-panel">
       <h1 class="title">NEON<span>SLOPE</span></h1>
-      <p class="subtitle">an infinite descent</p>
+      <p class="subtitle">shattered track</p>
 
-      <p class="controls-hint" id="desktop-hint">
-        <kbd>A</kbd><kbd>&larr;</kbd> steer left &nbsp;&nbsp; <kbd>D</kbd><kbd>&rarr;</kbd> steer right
-      </p>
-      <p class="controls-hint hidden" id="mobile-hint">
-        tilt your phone left / right to steer
-      </p>
+      <div id="desktop-controls">
+        <p class="controls-hint"><kbd>A</kbd><kbd>&larr;</kbd> steer left &nbsp;&nbsp; <kbd>D</kbd><kbd>&rarr;</kbd> steer right</p>
+        <button id="start-btn" class="btn">START RUN</button>
+      </div>
 
-      <button id="gyro-btn" class="btn btn--primary hidden">ENABLE TILT &amp; START</button>
-      <button id="start-btn" class="btn btn--primary">TAP TO START</button>
+      <div id="mobile-controls" class="hidden">
+        <p class="controls-hint">Tilt device to steer</p>
+        <button id="gyro-req-btn" class="btn btn--alt">1. ENABLE & CALIBRATE TILT</button>
+        <button id="start-mobile-btn" class="btn hidden">2. START RUN</button>
+      </div>
 
-      <p class="fine-print" id="gyro-fallback-msg"></p>
+      <p class="fine-print" id="system-msg">Press SPACE to jump straight in</p>
     </div>
   </div>
 
+  <!-- GYRO CALIBRATION SCREEN -->
+  <div id="calibration-screen" class="overlay hidden">
+    <div class="overlay-panel">
+      <h2 class="title" style="font-size:24px;">CALIBRATE TILT</h2>
+      <p class="controls-hint">Hold your phone in a comfortable playing position.</p>
+      
+      <div class="calibration-box">
+        <span id="raw-tilt-val">Raw Tilt: 0°</span>
+        <div class="tilt-meter">
+          <div class="tilt-center-mark"></div>
+          <div class="tilt-indicator" id="tilt-indicator"></div>
+        </div>
+      </div>
+
+      <button id="set-center-btn" class="btn">SET CENTER & PLAY</button>
+      <button id="fallback-touch-btn" class="btn btn--alt">USE TOUCH INSTEAD</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
   <div id="gameover-screen" class="overlay hidden">
     <div class="overlay-panel">
-      <h2 class="title title--sm">RUN TERMINATED</h2>
-      <div class="stats-row">
-        <div>
+      <h2 class="title" style="font-size:32px; color:var(--red);">TERMINATED</h2>
+      <div style="display:flex; justify-content:center; gap:36px; margin:20px 0;">
+        <div class="hud-stat">
           <span class="hud-label">DISTANCE</span>
           <span class="hud-value" id="final-score">0</span>
         </div>
-        <div>
+        <div class="hud-stat">
           <span class="hud-label">BEST</span>
           <span class="hud-value" id="final-best">0</span>
         </div>
       </div>
-      <p id="new-best-msg" class="new-best hidden">NEW BEST</p>
-      <button id="restart-btn" class="btn btn--primary">RESTART</button>
-      <p class="fine-print">press SPACE or tap anywhere to restart</p>
+      <button id="restart-btn" class="btn">RESTART</button>
     </div>
   </div>
 
@@ -241,39 +220,33 @@
    CONFIG & CONSTANTS
 ================================================================ */
 const COLORS = {
-  player: 0x22c55e,
-  track:  0x0f172a,
-  edge:   0x06b6d4,
-  hazard: 0xef4444,
-  void:   0x020617
+  player: 0x10b981, // Neon Green
+  track:  0x050505, // Almost black
+  edge:   0x10b981, // Bright green wireframe
+  hazard: 0xef4444, // Red
+  void:   0x000000  // Pure void[cite: 2]
 };
 
 const CONFIG = {
-  segmentLength: 24,
-  baseWidth: 11,
-  narrowWidth: 5,
+  baseWidth: 14,
+  narrowWidth: 7,
+  playerRadius: 1.0,
 
-  baseForwardSpeed: 20,
-  maxForwardSpeed: 62,
-  speedRampRate: 0.22,
+  baseForwardSpeed: 35, // Faster base speed
+  maxForwardSpeed: 110,
+  speedRampRate: 0.6, 
 
-  gravity: 46,
-  lateralAccel: 70,
-  lateralDamping: 4.5,
-  maxLateralSpeed: 30,
-  maxTrackHalfSpan: 40,
+  gravity: 75, // Heavy gravity for fast falling
+  lateralAccel: 130,
+  lateralDamping: 6.0,
+  maxLateralSpeed: 45,
 
-  playerRadius: 0.9,
-  deathFallDepth: 18,
+  genAheadIslands: 4,
+  islandBaseLength: 60,
+  gapMultiplier: 0.85, // How long gaps are relative to flight time
 
-  genAheadSegments: 8,
-  despawnBehindDistance: 40,
-  cameraFollowLerp: 6,
-
-  deadZoneDeg: 5,
-  maxTiltDeg: 30
+  deathFallDepth: 40 // Fall this far below current island = death
 };
-CONFIG.genAheadDistance = CONFIG.genAheadSegments * CONFIG.segmentLength;
 
 /* ================================================================
    STATE
@@ -286,685 +259,510 @@ const state = {
   distance: 0,
   forwardSpeed: CONFIG.baseForwardSpeed,
 
-  player: { x:0, y:CONFIG.playerRadius, z:0, velX:0, velY:0, grounded:true },
+  player: { x:0, y:CONFIG.playerRadius, z:0, velX:0, velY:0, grounded:false },
 
   keys: { left:false, right:false },
-  touchDir: 0,
-  gyro: { enabled:false, value:0 },
+  touch: { active:false, dir:0 },
+  
+  gyro: { 
+    enabled: false, 
+    rawGamma: 0, 
+    offsetGamma: 0, 
+    value: 0 
+  },
 
-  segments: [],
+  islands: [], // Array of separate track chunks
   nextSpawnZ: 0,
-  segmentCount: 0,
+  nextSpawnY: 0,
+  islandCount: 0,
 
-  highScore: Number(localStorage.getItem('neonSlopeHighScore') || 0),
+  highScore: Number(localStorage.getItem('neonSlopeShatteredBest') || 0),
   shake: 0
 };
 
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-                  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
 /* ================================================================
    THREE.JS SETUP
 ================================================================ */
-let renderer, scene, camera;
-let playerMesh, playerLight, starField;
-let particles = [];
-
-const canvas = document.getElementById('game-canvas');
-
-const sharedMat = {
-  track:  new THREE.MeshStandardMaterial({ color: COLORS.track, metalness:0.45, roughness:0.55, side: THREE.DoubleSide }),
-  edge:   new THREE.LineBasicMaterial({ color: COLORS.edge, transparent:true, opacity:0.9, blending: THREE.AdditiveBlending, depthWrite:false }),
-  hazard: new THREE.MeshStandardMaterial({ color: COLORS.hazard, emissive: COLORS.hazard, emissiveIntensity:0.75, metalness:0.2, roughness:0.4 })
-};
+let renderer, scene, camera, playerMesh, playerLight;
 
 function initScene(){
   scene = new THREE.Scene();
   scene.background = new THREE.Color(COLORS.void);
-  scene.fog = new THREE.FogExp2(COLORS.void, 0.014);
+  scene.fog = new THREE.FogExp2(COLORS.void, 0.006); // Thinner fog to see next islands
 
-  camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 400);
-  camera.position.set(0, 6, 10);
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 800);
+  camera.position.set(0, 8, 12);
 
-  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias:true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  scene.add(new THREE.AmbientLight(0x8899ff, 0.55));
-
-  const dir = new THREE.DirectionalLight(0xffffff, 0.55);
-  dir.position.set(-6, 14, 8);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+  dir.position.set(-10, 20, 10);
   scene.add(dir);
 
-  playerLight = new THREE.PointLight(COLORS.player, 2.4, 24, 2);
+  playerLight = new THREE.PointLight(COLORS.player, 2.5, 30, 2);
   scene.add(playerLight);
 
-  buildStarfield();
   buildPlayer();
-  resetState(); // build an idle track for the start screen backdrop
-
-  window.addEventListener('resize', onResize);
-}
-
-function onResize(){
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function buildStarfield(){
-  const count = 1400;
-  const positions = new Float32Array(count*3);
-  for (let i=0;i<count;i++){
-    const radius = 120 + Math.random()*180;
-    const theta = Math.random()*Math.PI*2;
-    const phi = Math.random()*Math.PI*0.6 + 0.05;
-    positions[i*3]   = Math.cos(theta)*Math.sin(phi)*radius;
-    positions[i*3+1] = Math.cos(phi)*radius*0.6 + 20;
-    positions[i*3+2] = Math.sin(theta)*Math.sin(phi)*radius - 100;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  const mat = new THREE.PointsMaterial({ color:0x8fd8ff, size:1.1, sizeAttenuation:true, transparent:true, opacity:0.85 });
-  starField = new THREE.Points(geo, mat);
-  scene.add(starField);
+  buildEnvironmentDust();
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 }
 
 function buildPlayer(){
   const geo = new THREE.SphereGeometry(CONFIG.playerRadius, 24, 24);
   const mat = new THREE.MeshStandardMaterial({
-    color: COLORS.player, emissive: COLORS.player, emissiveIntensity:0.9,
-    metalness:0.3, roughness:0.25, transparent:true, opacity:0.92
+    color: COLORS.player, emissive: COLORS.player, emissiveIntensity:0.8,
+    metalness:0.4, roughness:0.2
   });
   playerMesh = new THREE.Mesh(geo, mat);
-
-  const wireGeo = new THREE.SphereGeometry(CONFIG.playerRadius*1.05, 10, 10);
-  const wireMat = new THREE.MeshBasicMaterial({ color:0xbbffcc, wireframe:true, transparent:true, opacity:0.35 });
+  
+  // Wireframe shell for neon look
+  const wireGeo = new THREE.SphereGeometry(CONFIG.playerRadius*1.05, 12, 12);
+  const wireMat = new THREE.MeshBasicMaterial({ color:0xffffff, wireframe:true, transparent:true, opacity:0.3 });
   playerMesh.add(new THREE.Mesh(wireGeo, wireMat));
-
+  
   scene.add(playerMesh);
 }
 
+function buildEnvironmentDust(){
+  const count = 1000;
+  const positions = new Float32Array(count*3);
+  for (let i=0;i<count;i++){
+    positions[i*3]   = (Math.random()-0.5)*300;
+    positions[i*3+1] = (Math.random()-0.5)*300;
+    positions[i*3+2] = (Math.random()-0.5)*300;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const mat = new THREE.PointsMaterial({ color:0x33ff88, size:0.6, transparent:true, opacity:0.4 });
+  scene.add(new THREE.Points(geo, mat));
+}
+
 /* ================================================================
-   TRACK GEOMETRY BUILDERS
+   SHATTERED ISLAND GENERATOR (GAPS & RAMPS)
 ================================================================ */
-// Builds a sloped rectangular platform (wedge prism) from local z=0 (yStart)
-// to local z=-length (yEnd). This keeps the visual surface height in exact
-// linear agreement with the physics ground-sampling function below.
-function buildRampGeometry(width, length, yStart, yEnd){
+const trackMat = new THREE.MeshStandardMaterial({ color: COLORS.track, roughness: 0.7, metalness: 0.2 });
+const edgeMat = new THREE.LineBasicMaterial({ color: COLORS.edge, transparent:true, opacity:1.0, linewidth: 2 });
+const hazardMat = new THREE.MeshStandardMaterial({ color: COLORS.hazard, emissive: COLORS.hazard, emissiveIntensity:0.9 });
+
+function buildIsland(zStart, yStart, length, width, elevationDrop, curveOffset){
+  const steps = 24;
+  const positions = [];
+  const edgePts = [];
+  const indices = [];
   const hw = width/2;
-  const bottomY = Math.min(yStart, yEnd) - 3;
-  const positions = [
-    // top
-    -hw,yStart,0,   hw,yStart,0,   hw,yEnd,-length,   -hw,yEnd,-length,
-    // left wall
-    -hw,yStart,0,   -hw,yEnd,-length,   -hw,bottomY,-length,   -hw,bottomY,0,
-    // right wall
-    hw,yStart,0,   hw,bottomY,0,   hw,bottomY,-length,   hw,yEnd,-length,
-    // start cap
-    -hw,yStart,0,   -hw,bottomY,0,   hw,bottomY,0,   hw,yStart,0,
-    // end cap
-    -hw,yEnd,-length,   hw,yEnd,-length,   hw,bottomY,-length,   -hw,bottomY,-length
-  ];
-  const idx = [];
-  for (let f=0; f<5; f++){ const o=f*4; idx.push(o,o+1,o+2, o,o+2,o+3); }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
-  geo.setIndex(idx);
-  geo.computeVertexNormals();
-  return geo;
-}
 
-function buildEdgeGeometry(width, length, yStart, yEnd){
-  const hw = width/2, e = 0.03;
-  const pts = [
-    -hw,yStart+e,0,    hw,yStart+e,0,
-     hw,yStart+e,0,    hw,yEnd+e,-length,
-     hw,yEnd+e,-length, -hw,yEnd+e,-length,
-    -hw,yEnd+e,-length, -hw,yStart+e,0
-  ];
-  const rungs = Math.max(1, Math.floor(length/4));
-  for (let i=1;i<rungs;i++){
-    const t = i/rungs;
-    const z = -t*length;
-    const y = yStart + (yEnd-yStart)*t + e;
-    pts.push(-hw,y,z, hw,y,z);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
-  return geo;
-}
-
-function makeSlopeSegment(type, zStart, length, width, yStart, yEnd){
-  const mesh = new THREE.Mesh(buildRampGeometry(width, length, yStart, yEnd), sharedMat.track);
-  const edges = new THREE.LineSegments(buildEdgeGeometry(width, length, yStart, yEnd), sharedMat.edge);
-  const group = new THREE.Group();
-  group.add(mesh); group.add(edges);
-  group.position.set(0,0,zStart);
-
-  return { type, zStart, zEnd: zStart-length, yStart, yEnd, width, lanes:null, group, hazards:[] };
-}
-
-function makeSplitSegment(zStart, length, yStart){
-  const laneWidth = 3.6, gapHalf = 2.2;
-  const yEnd = yStart - (0.5 + Math.random());
-  const group = new THREE.Group();
-  group.position.set(0,0,zStart);
-
-  const lanes = [];
-  [-1,1].forEach(side => {
-    const cx = side * (gapHalf + laneWidth/2);
-    const mesh = new THREE.Mesh(buildRampGeometry(laneWidth, length, yStart, yEnd), sharedMat.track);
-    mesh.position.x = cx;
-    const edges = new THREE.LineSegments(buildEdgeGeometry(laneWidth, length, yStart, yEnd), sharedMat.edge);
-    edges.position.x = cx;
-    group.add(mesh); group.add(edges);
-    lanes.push({ cx, halfWidth: laneWidth/2 });
-  });
-
-  return { type:'split', zStart, zEnd: zStart-length, yStart, yEnd, width:null, lanes, group, hazards:[] };
-}
-
-function makeGapSegment(zStart, length, yStart, yEnd){
-  const group = new THREE.Group();
-  group.position.set(0,0,zStart);
-
-  const hw = CONFIG.baseWidth/2;
-  const pts = [ -hw,yStart+0.05,0,  -hw,yEnd+0.05,-length,   hw,yStart+0.05,0,  hw,yEnd+0.05,-length ];
-  const railGeo = new THREE.BufferGeometry();
-  railGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
-  group.add(new THREE.LineSegments(railGeo, sharedMat.edge));
-
-  return { type:'gap', zStart, zEnd: zStart-length, yStart, yEnd, width: CONFIG.baseWidth, lanes:null, group, hazards:[] };
-}
-
-function hazardChance(distance){ return Math.min(0.15 + distance/2000, 0.5); }
-
-function addHazards(segment){
-  if (Math.random() > hazardChance(state.distance)) return;
-  const count = 1 + (Math.random() < 0.3 ? 1 : 0);
-  const length = segment.zStart - segment.zEnd;
-
-  for (let i=0;i<count;i++){
-    const hw = (segment.width || 8)/2 - 1.2;
-    if (hw <= 0.5) continue;
-    const baseX = (Math.random()*2 - 1) * hw;
-    const z = -(0.25 + Math.random()*0.5) * length;
-    const t = -z/length;
-    const groundY = segment.yStart + (segment.yEnd - segment.yStart) * t;
-    const size = 1.8;
-    const moving = Math.random() < 0.5 && hw > 1.5;
-
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size,size,size), sharedMat.hazard);
-    mesh.position.set(baseX, groundY + size/2, z);
-    segment.group.add(mesh);
-
-    segment.hazards.push({
-      mesh, baseX, halfSize: size/2, moving,
-      amplitude: moving ? Math.min(hw - Math.abs(baseX)*0.3, 3) : 0,
-      speed: 1.2 + Math.random()*1.2,
-      phase: Math.random()*Math.PI*2,
-      maxX: hw
-    });
-  }
-}
-
-/* ================================================================
-   PROCEDURAL TRACK GENERATION
-================================================================ */
-function pickRandomType(){
-  const d = state.distance;
-  const weights = [
-    { type:'flat',    w: 6 },
-    { type:'incline', w: d>60  ? 3 : 1 },
-    { type:'narrow',  w: d>100 ? 3 : 0 },
-    { type:'split',   w: d>220 ? 2 : 0 },
-    { type:'ramp',    w: d>150 ? 2 : 0 }
-  ];
-  const total = weights.reduce((s,x)=>s+x.w,0);
-  let r = Math.random()*total;
-  for (const item of weights){ if (r < item.w) return item.type; r -= item.w; }
-  return 'flat';
-}
-
-function buildSegment(type, zStart, yStart, prev){
-  switch(type){
-    case 'flat': {
-      const length = CONFIG.segmentLength * (0.85 + Math.random()*0.3);
-      const yEnd = yStart - Math.random()*1.4;
-      const seg = makeSlopeSegment('flat', zStart, length, CONFIG.baseWidth, yStart, yEnd);
-      addHazards(seg);
-      return seg;
-    }
-    case 'incline': {
-      const length = CONFIG.segmentLength * 0.8;
-      const yEnd = yStart - (3 + Math.random()*2.5);
-      const seg = makeSlopeSegment('incline', zStart, length, CONFIG.baseWidth, yStart, yEnd);
-      addHazards(seg);
-      return seg;
-    }
-    case 'narrow': {
-      const length = CONFIG.segmentLength * 0.8;
-      const yEnd = yStart - Math.random()*1.2;
-      return makeSlopeSegment('narrow', zStart, length, CONFIG.narrowWidth, yStart, yEnd);
-    }
-    case 'split': {
-      const length = CONFIG.segmentLength * 0.9;
-      return makeSplitSegment(zStart, length, yStart);
-    }
-    case 'ramp': {
-      const length = 16;
-      const rise = 5 + Math.random()*3;
-      return makeSlopeSegment('ramp', zStart, length, CONFIG.baseWidth, yStart, yStart+rise);
-    }
-    case 'gap': {
-      const ramp = prev;
-      const rampLen = ramp.zStart - ramp.zEnd;
-      const exitVel = Math.max(((ramp.yEnd-ramp.yStart)/rampLen) * state.forwardSpeed, 4);
-      const g = CONFIG.gravity;
-      const totalAir = 2*exitVel/g;
-      const maxDist = state.forwardSpeed*totalAir;
-      const gapLength = THREE.MathUtils.clamp(maxDist*0.58, 6, 32);
-      const t = gapLength/state.forwardSpeed;
-      const landingY = ramp.yEnd + exitVel*t - 0.5*g*t*t;
-      return makeGapSegment(zStart, gapLength, ramp.yEnd, landingY);
-    }
-    default:
-      return buildSegment('flat', zStart, yStart, prev);
-  }
-}
-
-function generateNextSegment(){
-  const zStart = state.nextSpawnZ;
-  const prev = state.segments[state.segments.length-1];
-  const yStart = prev ? prev.yEnd : 0;
-
-  let type;
-  if (prev && prev.type === 'ramp') type = 'gap';
-  else if (prev && prev.type === 'gap') type = 'flat';
-  else if (state.segmentCount < 4) type = 'flat';
-  else type = pickRandomType();
-
-  const seg = buildSegment(type, zStart, yStart, prev);
-  state.segments.push(seg);
-  scene.add(seg.group);
-  state.nextSpawnZ = seg.zEnd;
-  state.segmentCount++;
-}
-
-function disposeSegment(seg){
-  seg.group.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
-}
-
-function manageTrack(){
-  while ((state.player.z - state.nextSpawnZ) < CONFIG.genAheadDistance){
-    generateNextSegment();
-  }
-  while (state.segments.length > 2 && (state.segments[0].zStart - state.player.z) > CONFIG.despawnBehindDistance){
-    const old = state.segments.shift();
-    scene.remove(old.group);
-    disposeSegment(old);
-  }
-}
-
-/* ================================================================
-   GROUND SAMPLING / PHYSICS
-================================================================ */
-function getSegmentAtZ(z){
-  for (let i=0;i<state.segments.length;i++){
-    const s = state.segments[i];
-    if (z <= s.zStart && z > s.zEnd) return s;
-  }
-  return null;
-}
-
-function sampleGround(x, z){
-  const seg = getSegmentAtZ(z);
-  if (!seg) return { hasGround:false, y: state.player.y - 100, seg:null };
-
-  const t = (seg.zStart - z) / (seg.zStart - seg.zEnd);
-  const refY = seg.yStart + (seg.yEnd - seg.yStart) * t;
-
-  if (seg.type === 'gap') return { hasGround:false, y:refY, seg };
-
-  if (seg.type === 'split'){
-    for (const lane of seg.lanes){
-      if (x >= lane.cx - lane.halfWidth && x <= lane.cx + lane.halfWidth) return { hasGround:true, y:refY, seg };
-    }
-    return { hasGround:false, y:refY, seg };
-  }
-
-  const hw = seg.width/2;
-  if (x >= -hw && x <= hw) return { hasGround:true, y:refY, seg };
-  return { hasGround:false, y:refY, seg };
-}
-
-function getSteerInput(){
-  const kb = (state.keys.right?1:0) - (state.keys.left?1:0);
-  if (kb !== 0) return kb;
-  if (state.gyro.enabled) return state.gyro.value;
-  return state.touchDir;
-}
-
-function checkHazards(seg, p){
-  for (const h of seg.hazards){
-    const worldX = h.mesh.position.x;
-    const worldY = h.mesh.position.y;
-    const worldZ = seg.zStart + h.mesh.position.z;
-    const dx = Math.max(Math.abs(p.x-worldX)-h.halfSize, 0);
-    const dy = Math.max(Math.abs(p.y-worldY)-h.halfSize, 0);
-    const dz = Math.max(Math.abs(p.z-worldZ)-h.halfSize, 0);
-    if (dx*dx + dy*dy + dz*dz < CONFIG.playerRadius*CONFIG.playerRadius){
-      triggerGameOver(true);
-      return;
-    }
-  }
-}
-
-function updatePhysicsStep(dt){
-  const p = state.player;
-  state.forwardSpeed = Math.min(CONFIG.baseForwardSpeed + state.elapsed*CONFIG.speedRampRate, CONFIG.maxForwardSpeed);
-
-  const steer = getSteerInput();
-  p.velX += steer * CONFIG.lateralAccel * dt;
-  p.velX -= p.velX * Math.min(CONFIG.lateralDamping*dt, 1);
-  p.velX = THREE.MathUtils.clamp(p.velX, -CONFIG.maxLateralSpeed, CONFIG.maxLateralSpeed);
-  p.x = THREE.MathUtils.clamp(p.x + p.velX*dt, -CONFIG.maxTrackHalfSpan, CONFIG.maxTrackHalfSpan);
-
-  p.z -= state.forwardSpeed*dt;
-  state.distance = -p.z;
-
-  const ground = sampleGround(p.x, p.z);
-  const surfaceY = ground.hasGround ? ground.y + CONFIG.playerRadius : null;
-
-  if (surfaceY !== null && p.y <= surfaceY + 0.5){
-    p.velY = dt > 0 ? (surfaceY - p.y)/dt : 0;
-    p.y = surfaceY;
-    p.grounded = true;
-  } else {
-    p.velY -= CONFIG.gravity*dt;
-    p.y += p.velY*dt;
-    p.grounded = false;
-  }
-
-  if (!ground.seg || (ground.y - p.y) > CONFIG.deathFallDepth){
-    triggerGameOver(false);
-    return;
-  }
-
-  checkHazards(ground.seg, p);
-  const idx = state.segments.indexOf(ground.seg);
-  if (idx >= 0 && state.segments[idx+1]) checkHazards(state.segments[idx+1], p);
-}
-
-function updateHazards(t){
-  for (const seg of state.segments){
-    for (const h of seg.hazards){
-      if (!h.moving) continue;
-      let x = h.baseX + Math.sin(t*h.speed + h.phase)*h.amplitude;
-      h.mesh.position.x = THREE.MathUtils.clamp(x, -h.maxX, h.maxX);
-    }
-  }
-}
-
-/* ================================================================
-   PARTICLES (death explosion)
-================================================================ */
-function spawnExplosion(pos){
-  clearParticles();
-  const count = 28;
-  for (let i=0;i<count;i++){
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(0.35,0.35,0.35),
-      new THREE.MeshBasicMaterial({ color: Math.random()<0.5?COLORS.player:COLORS.hazard, transparent:true })
-    );
-    mesh.position.copy(pos);
-    const theta = Math.random()*Math.PI*2;
-    const phi = Math.random()*Math.PI;
-    const speed = 6 + Math.random()*10;
-    const vel = new THREE.Vector3(
-      Math.sin(phi)*Math.cos(theta),
-      Math.cos(phi),
-      Math.sin(phi)*Math.sin(theta)
-    ).multiplyScalar(speed);
-    scene.add(mesh);
-    particles.push({ mesh, vel, life:1.0 });
-  }
-}
-
-function updateParticles(dt){
-  for (let i=particles.length-1;i>=0;i--){
-    const p = particles[i];
-    p.vel.y -= CONFIG.gravity*0.6*dt;
-    p.mesh.position.addScaledVector(p.vel, dt);
-    p.life -= dt*0.8;
-    p.mesh.material.opacity = Math.max(p.life,0);
-    p.mesh.scale.setScalar(Math.max(p.life,0.05));
-    if (p.life <= 0){
-      scene.remove(p.mesh);
-      p.mesh.geometry.dispose();
-      p.mesh.material.dispose();
-      particles.splice(i,1);
-    }
-  }
-}
-
-function clearParticles(){
-  particles.forEach(p => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
-  particles = [];
-}
-
-/* ================================================================
-   CAMERA
-================================================================ */
-const camTargetPos = new THREE.Vector3();
-const camLookTarget = new THREE.Vector3();
-
-function updateCamera(dt){
-  const p = state.player;
-  const speedT = THREE.MathUtils.clamp(
-    (state.forwardSpeed - CONFIG.baseForwardSpeed) / (CONFIG.maxForwardSpeed - CONFIG.baseForwardSpeed), 0, 1
+  // Island profile: Steep drop in the middle, kicking up into a ramp at the very end
+  const yEnd = yStart - elevationDrop;
+  
+  const curve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(0, yStart, 0),
+    new THREE.Vector3(curveOffset * 0.3, yStart, -length * 0.3),
+    new THREE.Vector3(curveOffset * 0.8, yEnd - 8, -length * 0.7), // Drop lower than exit to create a swoop
+    new THREE.Vector3(curveOffset, yEnd, -length) // Kick up to yEnd
   );
 
-  const targetFov = 65 + speedT*12;
-  camera.fov += (targetFov - camera.fov) * Math.min(dt*3, 1);
+  for (let i = 0; i <= steps; i++){
+    const t = i / steps;
+    const pt = curve.getPoint(t);
+    const depth = 4; // Thickness of track
+    
+    positions.push(pt.x - hw, pt.y, pt.z);
+    positions.push(pt.x + hw, pt.y, pt.z);
+    positions.push(pt.x - hw, pt.y - depth, pt.z);
+    positions.push(pt.x + hw, pt.y - depth, pt.z);
+
+    // Edges for wireframe look[cite: 2]
+    if (i < steps) {
+      const nextT = (i + 1) / steps;
+      const nextPt = curve.getPoint(nextT);
+      edgePts.push(pt.x - hw, pt.y+0.05, pt.z, nextPt.x - hw, nextPt.y+0.05, nextPt.z);
+      edgePts.push(pt.x + hw, pt.y+0.05, pt.z, nextPt.x + hw, nextPt.y+0.05, nextPt.z);
+      if (i % 3 === 0) { // Horizontal grid lines
+        edgePts.push(pt.x - hw, pt.y+0.05, pt.z, pt.x + hw, pt.y+0.05, pt.z);
+      }
+    }
+  }
+
+  for (let i = 0; i < steps; i++){
+    const r1 = i * 4, r2 = (i + 1) * 4;
+    indices.push(r1, r1+1, r2+1,  r1, r2+1, r2);
+    indices.push(r1, r2, r2+2,    r1, r2+2, r1+2);
+    indices.push(r1+1, r1+3, r2+3, r1+1, r2+3, r2+1);
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+
+  const edgeGeo = new THREE.BufferGeometry();
+  edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgePts, 3));
+
+  const mesh = new THREE.Mesh(geo, trackMat);
+  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+  
+  const group = new THREE.Group();
+  group.add(mesh); group.add(edges);
+  group.position.set(0, 0, zStart);
+
+  // Determine exit velocity tangent for physics gaps
+  const exitTangent = curve.getTangent(1.0);
+  const launchSlopeY = exitTangent.y / Math.abs(exitTangent.z);
+
+  return { zStart, zEnd: zStart - length, yStart, yEnd, curve, group, hazards: [], launchSlopeY, hw };
+}
+
+function spawnHazards(island){
+  if (state.islandCount < 2 || Math.random() < 0.3) return; // Give breathing room[cite: 2]
+  
+  const numHazards = 1 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < numHazards; i++){
+    const t = 0.3 + Math.random() * 0.4; // Place in middle of island
+    const pt = island.curve.getPoint(t);
+    const size = 2.5;
+    
+    // Position constraint: don't block entire path
+    const offset = (Math.random() > 0.5 ? 1 : -1) * (island.hw - size);
+    
+    const block = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), hazardMat);
+    block.position.set(pt.x + offset, pt.y + size/2, pt.z);
+    island.group.add(block);
+    island.hazards.push({ mesh: block, size: size/2, worldX: pt.x+offset, worldY: pt.y+size/2, worldZ: island.zStart+pt.z });
+  }
+}
+
+function calculateNextIslandSpawn(prevIsland){
+  // Ballistic calculation to make the next island perfectly reachable
+  const Vz = state.forwardSpeed; 
+  const Vy = Vz * prevIsland.launchSlopeY; // Upward momentum from ramp
+  
+  // Decide how far the gap is (flight time)
+  const baseAirTime = (2 * Math.max(Vy, 15)) / CONFIG.gravity; 
+  const flightTime = baseAirTime * (0.8 + Math.random()*0.4); // Randomize gap distance
+  
+  const gapZ = Vz * flightTime;
+  const dropY = (Vy * flightTime) - (0.5 * CONFIG.gravity * flightTime * flightTime);
+
+  // Ensure the ball lands smoothly at the start of the next island
+  const nextZ = prevIsland.zEnd - gapZ;
+  const nextY = prevIsland.yEnd + dropY;
+
+  return { nextZ, nextY };
+}
+
+function manageIslands(){
+  // Initial generation
+  if (state.islands.length === 0){
+    const startIsland = buildIsland(0, 0, 80, CONFIG.baseWidth, 0, 0); // Flat start
+    state.islands.push(startIsland);
+    scene.add(startIsland.group);
+    state.nextSpawnZ = startIsland.zEnd;
+    state.nextSpawnY = startIsland.yEnd;
+    state.islandCount++;
+  }
+
+  // Generate ahead
+  while (state.islands.length < CONFIG.genAheadIslands){
+    const prev = state.islands[state.islands.length - 1];
+    
+    // Math to jump gap
+    const { nextZ, nextY } = calculateNextIslandSpawn(prev);
+    
+    // Randomize next island properties
+    const length = CONFIG.islandBaseLength + Math.random() * 40;
+    const drop = 5 + Math.random() * 25; // Much steeper drops
+    const curveOffset = (Math.random() - 0.5) * 40;
+    const width = Math.random() > 0.7 ? CONFIG.narrowWidth : CONFIG.baseWidth;
+
+    const island = buildIsland(nextZ, nextY, length, width, drop, curveOffset);
+    spawnHazards(island);
+    
+    state.islands.push(island);
+    scene.add(island.group);
+    state.islandCount++;
+  }
+
+  // Cleanup behind
+  if (state.islands[0].zEnd > state.player.z + 20){
+    const old = state.islands.shift();
+    scene.remove(old.group);
+    old.group.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+  }
+}
+
+/* ================================================================
+   PHYSICS ENGINE (Gaps & Trajectories)
+================================================================ */
+function getActiveIsland(z){
+  for (let i = 0; i < state.islands.length; i++){
+    const isl = state.islands[i];
+    if (z <= isl.zStart && z >= isl.zEnd) return isl;
+  }
+  return null; // In a gap!
+}
+
+function updatePhysics(dt){
+  const p = state.player;
+  
+  // Acceleration
+  state.forwardSpeed = Math.min(CONFIG.baseForwardSpeed + state.elapsed * CONFIG.speedRampRate, CONFIG.maxForwardSpeed);
+
+  // Lateral Input
+  let steer = 0;
+  if (state.keys.left) steer = -1;
+  else if (state.keys.right) steer = 1;
+  else if (state.gyro.enabled) steer = state.gyro.value;
+  else if (state.touch.active) steer = state.touch.dir;
+
+  p.velX += steer * CONFIG.lateralAccel * dt;
+  p.velX -= p.velX * Math.min(CONFIG.lateralDamping * dt, 1);
+  p.velX = THREE.MathUtils.clamp(p.velX, -CONFIG.maxLateralSpeed, CONFIG.maxLateralSpeed);
+  
+  // Move Forward & Sideways
+  p.z -= state.forwardSpeed * dt;
+  state.distance = -p.z;
+
+  const island = getActiveIsland(p.z);
+  
+  if (island) {
+    // ON AN ISLAND: Sample ground height
+    const t = THREE.MathUtils.clamp((island.zStart - p.z) / (island.zStart - island.zEnd), 0, 1);
+    const pt = island.curve.getPoint(t);
+    const tangent = island.curve.getTangent(t);
+    
+    // Follow the curve horizontally
+    p.x += p.velX * dt;
+    
+    // Check if fell off edges[cite: 2]
+    if (Math.abs(p.x - pt.x) > island.hw + 0.5) {
+       p.grounded = false; // Fell off side
+    } else {
+       // Snap to ground y
+       const targetY = pt.y + CONFIG.playerRadius;
+       if (p.y <= targetY + 1.0 || p.grounded) { // Snap down if close
+         p.y = targetY;
+         p.velY = 0;
+         p.grounded = true;
+         
+         // At the very end of the island, launch into the gap!
+         if (t > 0.98) {
+           p.velY = state.forwardSpeed * island.launchSlopeY;
+           p.grounded = false;
+         }
+       } else {
+         p.grounded = false;
+       }
+    }
+
+    // Hazard collisions
+    for (const h of island.hazards) {
+      const dx = Math.abs(p.x - h.worldX), dy = Math.abs(p.y - h.worldY), dz = Math.abs(p.z - h.worldZ);
+      if (dx < h.size + 0.8 && dy < h.size + 0.8 && dz < h.size + 0.8) triggerGameOver();
+    }
+
+  } else {
+    // AIRBORNE IN A GAP[cite: 2]
+    p.grounded = false;
+    p.x += p.velX * dt;
+  }
+
+  // Apply Gravity whenever not grounded
+  if (!p.grounded) {
+    p.velY -= CONFIG.gravity * dt;
+    p.y += p.velY * dt;
+  }
+
+  // Death by falling into the void
+  let referenceY = island ? island.curve.getPoint((island.zStart-p.z)/(island.zStart-island.zEnd)).y : state.islands[state.islands.length-1].yStart;
+  if (p.y < referenceY - CONFIG.deathFallDepth) triggerGameOver();
+}
+
+/* ================================================================
+   CAMERA CONTROLLER
+================================================================ */
+function updateCamera(dt){
+  const p = state.player;
+  const speedRatio = state.forwardSpeed / CONFIG.maxForwardSpeed;
+  
+  // Dynamic FOV for speed sensation
+  camera.fov = THREE.MathUtils.lerp(camera.fov, 70 + speedRatio * 25, dt * 5);
   camera.updateProjectionMatrix();
 
-  const camHeight = 5.5 + speedT*0.6;
-  const camDist   = 9 + speedT*1.5;
-  camTargetPos.set(p.x*0.6, p.y + camHeight, p.z + camDist);
-  camera.position.lerp(camTargetPos, Math.min(dt*CONFIG.cameraFollowLerp, 1));
+  // Camera follows above and behind
+  const targetX = p.x * 0.5;
+  let targetY = p.y + 6 + speedRatio * 2;
+  const targetZ = p.z + 14 + speedRatio * 4;
 
+  // Prevent camera dipping too violently during steep drops
+  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, dt * 8);
+  camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, dt * 6);
+  camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, dt * 10);
+
+  // Look ahead at the track
+  const lookAtTarget = new THREE.Vector3(p.x, p.y - 2, p.z - 15);
+  camera.lookAt(lookAtTarget);
+
+  // Screen shake
   if (state.shake > 0){
     camera.position.x += (Math.random()-0.5)*state.shake;
     camera.position.y += (Math.random()-0.5)*state.shake;
-    state.shake = Math.max(0, state.shake - dt*1.5);
+    state.shake -= dt * 2;
   }
-
-  camLookTarget.set(p.x*0.8, p.y+0.5, p.z-6);
-  camera.lookAt(camLookTarget);
 }
 
 /* ================================================================
-   HUD
+   UI & GAME FLOW
 ================================================================ */
-const el = {
+const UI = {
   score: document.getElementById('score-value'),
-  best: document.getElementById('best-value'),
-  speedText: document.getElementById('speed-text'),
-  speedFill: document.getElementById('speed-fill'),
+  speed: document.getElementById('speed-value'),
   hud: document.getElementById('hud'),
   startScreen: document.getElementById('start-screen'),
-  gameOverScreen: document.getElementById('gameover-screen'),
-  finalScore: document.getElementById('final-score'),
-  finalBest: document.getElementById('final-best'),
-  newBestMsg: document.getElementById('new-best-msg'),
-  desktopHint: document.getElementById('desktop-hint'),
-  mobileHint: document.getElementById('mobile-hint'),
-  gyroBtn: document.getElementById('gyro-btn'),
-  startBtn: document.getElementById('start-btn'),
-  restartBtn: document.getElementById('restart-btn'),
-  gyroMsg: document.getElementById('gyro-fallback-msg')
+  calibrationScreen: document.getElementById('calibration-screen'),
+  gameOverScreen: document.getElementById('gameover-screen')
 };
 
-function updateHUD(){
-  el.score.textContent = Math.floor(state.distance);
-  el.best.textContent = state.highScore;
-  const kmh = Math.round(state.forwardSpeed*3.1);
-  el.speedText.innerHTML = kmh + ' <small>km/h</small>';
-  const pct = THREE.MathUtils.clamp(
-    ((state.forwardSpeed-CONFIG.baseForwardSpeed)/(CONFIG.maxForwardSpeed-CONFIG.baseForwardSpeed))*100, 0, 100
-  );
-  el.speedFill.style.width = pct + '%';
-}
-
-/* ================================================================
-   GAME FLOW
-================================================================ */
-function resetState(){
-  state.segments.forEach(s => { scene.remove(s.group); disposeSegment(s); });
-  state.segments = [];
-  state.nextSpawnZ = 0;
-  state.segmentCount = 0;
+function startGame(){
+  UI.startScreen.classList.add('hidden');
+  UI.calibrationScreen.classList.add('hidden');
+  UI.gameOverScreen.classList.add('hidden');
+  UI.hud.classList.remove('hidden');
+  
+  state.islands.forEach(isl => { scene.remove(isl.group); isl.group.traverse(c => { if(c.geometry) c.geometry.dispose(); }); });
+  state.islands = [];
+  state.islandCount = 0;
   state.distance = 0;
   state.elapsed = 0;
   state.forwardSpeed = CONFIG.baseForwardSpeed;
-
-  state.player.x = 0; state.player.z = 0;
-  state.player.velX = 0; state.player.velY = 0;
-  state.player.y = CONFIG.playerRadius;
-  state.player.grounded = true;
-
-  state.shake = 0;
-  clearParticles();
-
-  manageTrack();
-
-  if (playerMesh) playerMesh.position.set(0, state.player.y, 0);
-}
-
-function startGame(){
-  resetState();
-  el.startScreen.classList.add('hidden');
-  el.gameOverScreen.classList.add('hidden');
-  el.hud.classList.remove('hidden');
+  
+  state.player = { x:0, y:CONFIG.playerRadius+2, z:0, velX:0, velY:0, grounded:false };
+  
+  manageIslands();
+  
   state.running = true;
   state.gameOver = false;
   state.clock.start();
 }
 
-function restartGame(){
-  if (!state.gameOver) return;
-  startGame();
-}
-
-function triggerGameOver(exploded){
+function triggerGameOver(){
   if (state.gameOver) return;
-  state.gameOver = true;
-  state.running = false;
-  state.shake = 0.6;
-
-  if (exploded) spawnExplosion(playerMesh.position.clone());
-
+  state.gameOver = true; state.running = false; state.shake = 1.0;
+  
   const dist = Math.floor(state.distance);
   if (dist > state.highScore){
     state.highScore = dist;
-    localStorage.setItem('neonSlopeHighScore', String(dist));
-    el.newBestMsg.classList.remove('hidden');
-  } else {
-    el.newBestMsg.classList.add('hidden');
+    localStorage.setItem('neonSlopeShatteredBest', state.highScore);
   }
-
-  el.finalScore.textContent = dist;
-  el.finalBest.textContent = state.highScore;
-  el.hud.classList.add('hidden');
-  el.gameOverScreen.classList.remove('hidden');
+  
+  document.getElementById('final-score').textContent = dist;
+  document.getElementById('final-best').textContent = state.highScore;
+  
+  UI.hud.classList.add('hidden');
+  setTimeout(() => UI.gameOverScreen.classList.remove('hidden'), 500);
 }
 
 /* ================================================================
-   INPUT
+   GYROSCOPE CALIBRATION & INPUT
 ================================================================ */
-function setupInput(){
+function handleOrientation(event){
+  if (event.gamma === null) return;
+  state.gyro.rawGamma = event.gamma;
+  
+  // Calculate calibrated value
+  let adjusted = event.gamma - state.gyro.offsetGamma;
+  
+  // Deadzone and clamp
+  const deadzone = 4;
+  const maxTilt = 25;
+  let val = 0;
+  if (Math.abs(adjusted) > deadzone){
+    val = (Math.abs(adjusted) - deadzone) / (maxTilt - deadzone) * Math.sign(adjusted);
+  }
+  state.gyro.value = THREE.MathUtils.clamp(val, -1, 1);
+
+  // Update calibration UI visually
+  if (!UI.calibrationScreen.classList.contains('hidden')){
+    document.getElementById('raw-tilt-val').textContent = `Raw Tilt: ${Math.round(event.gamma)}°`;
+    const indicator = document.getElementById('tilt-indicator');
+    let pct = 50 + (adjusted / 45) * 50; 
+    indicator.style.left = `${THREE.MathUtils.clamp(pct, 0, 100)}%`;
+  }
+}
+
+function requestGyroPermission(){
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+    DeviceOrientationEvent.requestPermission()
+      .then(permissionState => {
+        if (permissionState === 'granted') openCalibration();
+        else alert('Tilt permission denied. Using touch controls.');
+      })
+      .catch(console.error);
+  } else {
+    openCalibration(); // Android/older devices
+  }
+}
+
+function openCalibration(){
+  window.addEventListener('deviceorientation', handleOrientation);
+  state.gyro.enabled = true;
+  UI.startScreen.classList.add('hidden');
+  UI.calibrationScreen.classList.remove('hidden');
+}
+
+function setGyroCenter(){
+  state.gyro.offsetGamma = state.gyro.rawGamma;
+  startGame();
+}
+
+function setupInputs(){
+  // Keyboard
   window.addEventListener('keydown', e => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA'){ state.keys.left = true; e.preventDefault(); }
-    if (e.code === 'ArrowRight' || e.code === 'KeyD'){ state.keys.right = true; e.preventDefault(); }
-    if (e.code === 'Space'){
-      e.preventDefault();
-      if (state.gameOver) restartGame();
-      else if (!state.running) startGame();
+    if(e.code==='ArrowLeft'||e.code==='KeyA') state.keys.left = true;
+    if(e.code==='ArrowRight'||e.code==='KeyD') state.keys.right = true;
+    if(e.code==='Space') {
+      if(state.gameOver) startGame();
+      else if(!state.running && UI.calibrationScreen.classList.contains('hidden')) startGame();
     }
   });
   window.addEventListener('keyup', e => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = false;
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = false;
+    if(e.code==='ArrowLeft'||e.code==='KeyA') state.keys.left = false;
+    if(e.code==='ArrowRight'||e.code==='KeyD') state.keys.right = false;
   });
 
-  function handleTouch(e){
-    if (!e.touches.length){ state.touchDir = 0; return; }
-    const x = e.touches[0].clientX;
-    state.touchDir = x < window.innerWidth/2 ? -1 : 1;
+  // Touch fallback
+  const canvas = document.getElementById('game-canvas');
+  canvas.addEventListener('touchstart', e => { state.touch.active=true; state.touch.dir = e.touches[0].clientX < window.innerWidth/2 ? -1 : 1; }, {passive:true});
+  canvas.addEventListener('touchmove', e => { state.touch.dir = e.touches[0].clientX < window.innerWidth/2 ? -1 : 1; }, {passive:true});
+  canvas.addEventListener('touchend', () => { state.touch.active = false; state.touch.dir = 0; }, {passive:true});
+
+  // UI Buttons
+  if (isMobile) {
+    document.getElementById('desktop-controls').classList.add('hidden');
+    document.getElementById('mobile-controls').classList.remove('hidden');
+    document.getElementById('system-msg').classList.add('hidden');
   }
-  canvas.addEventListener('touchstart', handleTouch, { passive:true });
-  canvas.addEventListener('touchmove', handleTouch, { passive:true });
-  canvas.addEventListener('touchend', () => { state.touchDir = 0; }, { passive:true });
-  canvas.addEventListener('touchcancel', () => { state.touchDir = 0; }, { passive:true });
-}
 
-function handleOrientation(e){
-  if (e.gamma == null) return;
-  let gamma = THREE.MathUtils.clamp(e.gamma, -CONFIG.maxTiltDeg, CONFIG.maxTiltDeg);
-  const dz = CONFIG.deadZoneDeg;
-  let v = 0;
-  if (Math.abs(gamma) > dz){
-    v = (Math.abs(gamma)-dz) / (CONFIG.maxTiltDeg-dz) * Math.sign(gamma);
-  }
-  state.gyro.value = THREE.MathUtils.clamp(v, -1, 1);
-}
-
-function enableGyro(){
-  const hasAPI = typeof DeviceOrientationEvent !== 'undefined';
-  const needsPermission = hasAPI && typeof DeviceOrientationEvent.requestPermission === 'function';
-
-  if (needsPermission){
-    DeviceOrientationEvent.requestPermission().then(resp => {
-      if (resp === 'granted'){
-        window.addEventListener('deviceorientation', handleOrientation);
-        state.gyro.enabled = true;
-        el.gyroMsg.textContent = '';
-      } else {
-        el.gyroMsg.textContent = 'Tilt permission denied — using touch controls instead.';
-        state.gyro.enabled = false;
-      }
-    }).catch(() => {
-      el.gyroMsg.textContent = 'Tilt unavailable — using touch controls instead.';
-      state.gyro.enabled = false;
-    });
-  } else if (hasAPI){
-    window.addEventListener('deviceorientation', handleOrientation);
-    state.gyro.enabled = true;
-  } else {
-    el.gyroMsg.textContent = 'Gyroscope not supported on this device — using touch controls.';
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('gyro-req-btn').addEventListener('click', requestGyroPermission);
+  document.getElementById('set-center-btn').addEventListener('click', setGyroCenter);
+  document.getElementById('fallback-touch-btn').addEventListener('click', () => {
     state.gyro.enabled = false;
-  }
-}
-
-function setupUI(){
-  if (isMobile){
-    el.desktopHint.classList.add('hidden');
-    el.mobileHint.classList.remove('hidden');
-    el.gyroBtn.classList.remove('hidden');
-    el.startBtn.textContent = 'START (TOUCH CONTROLS)';
-  }
-
-  el.gyroBtn.addEventListener('click', () => { enableGyro(); startGame(); });
-  el.startBtn.addEventListener('click', () => { startGame(); });
-  el.gameOverScreen.addEventListener('click', () => { restartGame(); });
-
-  setupInput();
+    startGame();
+  });
+  document.getElementById('restart-btn').addEventListener('click', startGame);
 }
 
 /* ================================================================
-   MAIN LOOP
+   LOOP
 ================================================================ */
 function animate(){
   requestAnimationFrame(animate);
@@ -972,33 +770,25 @@ function animate(){
 
   if (state.running){
     state.elapsed += dt;
-    updatePhysicsStep(dt);
-    if (state.running){ // may have just been set false by a death this frame
-      manageTrack();
-      updateHazards(state.elapsed);
-    }
-    updateHUD();
-  }
-  if (state.gameOver){
-    updateParticles(dt);
+    updatePhysics(dt);
+    manageIslands();
+    
+    UI.score.textContent = Math.floor(state.distance);
+    UI.speed.textContent = Math.floor(state.forwardSpeed * 3);
   }
 
-  const p = state.player;
-  playerMesh.position.set(p.x, p.y, p.z);
-  playerMesh.rotation.x -= state.forwardSpeed*dt*0.15;
-  playerMesh.rotation.z = THREE.MathUtils.clamp(-p.velX*0.04, -0.5, 0.5);
-  playerLight.position.set(p.x, p.y+1, p.z+1);
+  playerMesh.position.set(state.player.x, state.player.y, state.player.z);
+  playerMesh.rotation.x -= state.forwardSpeed * dt * 0.2;
+  playerMesh.rotation.z = -state.player.velX * 0.05;
+  playerLight.position.copy(playerMesh.position).add(new THREE.Vector3(0, 2, 0));
 
   updateCamera(dt);
   renderer.render(scene, camera);
 }
 
-/* ================================================================
-   BOOT
-================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   initScene();
-  setupUI();
+  setupInputs();
   requestAnimationFrame(animate);
 });
 
