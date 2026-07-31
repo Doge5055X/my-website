@@ -1,1129 +1,1008 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Neon Slope - 3D Infinite Runner</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEON SLOPE — Infinite Descent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#020617;
+    --track:#0f172a;
+    --cyan:#06b6d4;
+    --green:#22c55e;
+    --red:#ef4444;
+    --ink:#dceeff;
+    --panel-border: rgba(6,182,212,0.45);
+  }
 
-        body {
-            overflow: hidden;
-            background: #020617;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
-        #game-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--void);
+    color:var(--ink);
+    font-family:'Rajdhani',sans-serif;
+    overflow:hidden;
+    overscroll-behavior:none;
+  }
 
-        canvas {
-            display: block;
-        }
+  #game-canvas{
+    position:fixed; inset:0;
+    display:block;
+    width:100%; height:100%;
+    touch-action:none;
+  }
 
-        /* Start Screen */
-        #start-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(2, 6, 23, 0.92);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            transition: opacity 0.5s ease;
-        }
+  .hidden{ display:none !important; }
 
-        #start-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+  /* ---------- HUD ---------- */
+  #hud{
+    position:fixed; inset:0;
+    pointer-events:none;
+    padding: max(16px, env(safe-area-inset-top)) 20px 20px 20px;
+    z-index:5;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .hud-top{
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .hud-stat{ display:flex; flex-direction:column; gap:2px; }
+  .hud-stat--right{ align-items:flex-end; }
+  .hud-label{
+    font-size:11px; letter-spacing:3px; font-weight:600;
+    color:var(--cyan); opacity:0.85; text-shadow:0 0 8px rgba(6,182,212,0.8);
+  }
+  .hud-value{
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(22px,5vw,32px); font-weight:800;
+    color:#eafff3;
+    text-shadow:0 0 12px rgba(34,197,94,0.75), 0 0 2px #fff;
+    line-height:1.1;
+  }
+  #best-value{ color:#bff2ff; text-shadow:0 0 12px rgba(6,182,212,0.8); }
 
-        .game-title {
-            font-size: clamp(2.5rem, 8vw, 5rem);
-            font-weight: 900;
-            color: #22c55e;
-            text-shadow: 0 0 20px rgba(34, 197, 94, 0.6), 0 0 40px rgba(34, 197, 94, 0.3);
-            letter-spacing: 4px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+  .speed-gauge{
+    align-self:center;
+    width:min(320px, 70vw);
+    height:14px;
+    border-radius:8px;
+    background:rgba(15,23,42,0.75);
+    border:1px solid var(--panel-border);
+    overflow:hidden;
+    position:relative;
+    box-shadow: 0 0 14px rgba(6,182,212,0.25) inset;
+  }
+  .speed-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--green), var(--cyan) 60%, var(--red));
+    box-shadow:0 0 12px rgba(6,182,212,0.9);
+    transition:width 0.08s linear;
+  }
+  .speed-text{
+    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
+    font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700;
+    color:#eafff3; letter-spacing:1px; white-space:nowrap;
+    text-shadow:0 0 8px rgba(34,197,94,0.7);
+  }
+  .speed-text small{ font-size:9px; opacity:0.7; letter-spacing:1px; }
 
-        .game-subtitle {
-            font-size: clamp(0.9rem, 3vw, 1.3rem);
-            color: #06b6d4;
-            margin-bottom: 40px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
+  /* ---------- Overlays ---------- */
+  .overlay{
+    position:fixed; inset:0; z-index:20;
+    display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(ellipse at center, rgba(6,20,40,0.55), rgba(2,6,23,0.92));
+    backdrop-filter: blur(3px);
+    transition:opacity 0.25s ease;
+    padding:20px;
+  }
 
-        .start-btn {
-            padding: 18px 50px;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #020617;
-            background: #22c55e;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 0 30px rgba(34, 197, 94, 0.5);
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
+  .overlay-panel{
+    width:min(420px, 100%);
+    padding:32px 28px 26px;
+    border-radius:18px;
+    background:rgba(9,16,32,0.82);
+    border:1px solid var(--panel-border);
+    box-shadow: 0 0 0 1px rgba(6,182,212,0.08), 0 0 40px rgba(6,182,212,0.18), 0 0 70px rgba(34,197,94,0.08);
+    text-align:center;
+  }
 
-        .start-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(34, 197, 94, 0.7);
-        }
+  .title{
+    font-family:'Orbitron',sans-serif;
+    font-weight:900;
+    font-size:clamp(30px,8vw,44px);
+    letter-spacing:4px;
+    margin:0 0 4px;
+    color:#eafff5;
+    text-shadow: 0 0 10px rgba(34,197,94,0.9), 0 0 26px rgba(34,197,94,0.4);
+  }
+  .title span{
+    color:var(--cyan);
+    text-shadow: 0 0 10px rgba(6,182,212,1), 0 0 30px rgba(6,182,212,0.5);
+  }
+  .title--sm{ font-size:clamp(22px,6vw,30px); letter-spacing:3px; color:var(--red);
+    text-shadow:0 0 10px rgba(239,68,68,0.85), 0 0 26px rgba(239,68,68,0.4); }
 
-        .gyro-btn {
-            background: #06b6d4;
-            box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
-            display: none;
-        }
+  .subtitle{
+    margin:0 0 22px;
+    font-size:14px; letter-spacing:5px; text-transform:uppercase;
+    color:#7fb8cf; opacity:0.8;
+  }
 
-        .gyro-btn:hover {
-            box-shadow: 0 0 40px rgba(6, 182, 212, 0.7);
-        }
+  .controls-hint{
+    font-size:15px; color:#bfe4ff; margin:0 0 18px; letter-spacing:0.5px;
+  }
+  kbd{
+    display:inline-block; min-width:22px; padding:3px 7px; margin:0 2px;
+    border-radius:5px; border:1px solid var(--panel-border);
+    background:rgba(6,182,212,0.08); color:#e6fbff;
+    font-family:'Orbitron',sans-serif; font-size:12px;
+    box-shadow:0 0 8px rgba(6,182,212,0.25) inset;
+  }
 
-        .controls-info {
-            color: #64748b;
-            font-size: 0.85rem;
-            margin-top: 20px;
-            text-align: center;
-            line-height: 1.6;
-        }
+  .btn{
+    display:block; width:100%;
+    font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:2px; font-size:15px;
+    padding:15px 18px; margin-top:12px;
+    border-radius:10px; border:1px solid rgba(34,197,94,0.7);
+    background:linear-gradient(180deg, rgba(34,197,94,0.18), rgba(34,197,94,0.06));
+    color:#eafff3; cursor:pointer;
+    box-shadow:0 0 18px rgba(34,197,94,0.25);
+    transition:transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+  }
+  .btn:hover{ box-shadow:0 0 26px rgba(34,197,94,0.5); transform:translateY(-1px); }
+  .btn:active{ transform:translateY(0); box-shadow:0 0 12px rgba(34,197,94,0.4); }
+  .btn--primary{ }
 
-        .controls-info span {
-            color: #94a3b8;
-        }
+  .fine-print{
+    margin:16px 0 0; font-size:12px; letter-spacing:1px; color:#6f93a8; min-height:14px;
+  }
 
-        /* HUD */
-        #hud {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 20px;
-            display: none;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 50;
-            pointer-events: none;
-        }
+  .stats-row{
+    display:flex; justify-content:center; gap:36px; margin:6px 0 6px;
+  }
+  .stats-row > div{ display:flex; flex-direction:column; gap:2px; }
+  .stats-row .hud-value{ color:#eafff3; }
 
-        #hud.active {
-            display: flex;
-        }
-
-        .hud-panel {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            border-radius: 12px;
-            padding: 12px 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .hud-label {
-            font-size: 0.7rem;
-            color: #06b6d4;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
-
-        .hud-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #22c55e;
-            text-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
-        }
-
-        .speed-bar-container {
-            width: 150px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .speed-bar {
-            height: 100%;
-            background: #22c55e;
-            border-radius: 3px;
-            transition: width 0.2s ease;
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-        }
-
-        /* Game Over Screen */
-        #game-over {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(2, 6, 23, 0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-
-        #game-over.active {
-            display: flex;
-        }
-
-        .game-over-title {
-            font-size: clamp(2rem, 6vw, 3.5rem);
-            font-weight: 900;
-            color: #ef4444;
-            text-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-        }
-
-        .final-score {
-            font-size: 1.5rem;
-            color: #22c55e;
-            margin-bottom: 5px;
-        }
-
-        .high-score {
-            font-size: 1.1rem;
-            color: #06b6d4;
-            margin-bottom: 30px;
-        }
-
-        .restart-hint {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
-        }
-
-        /* Mobile detection for gyro button */
-        @media (hover: none) and (pointer: coarse) {
-            .gyro-btn {
-                display: inline-block;
-            }
-        }
-
-        /* Touch zones indicator (subtle) */
-        .touch-zone {
-            position: fixed;
-            top: 0;
-            width: 50%;
-            height: 100%;
-            z-index: 40;
-            display: none;
-        }
-
-        .touch-zone.left {
-            left: 0;
-        }
-
-        .touch-zone.right {
-            right: 0;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<base target="_blank">
+  .new-best{
+    font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; letter-spacing:3px;
+    color:var(--green); text-shadow:0 0 10px rgba(34,197,94,0.8);
+    margin:10px 0 0;
+  }
+</style>
 </head>
 <body>
-    <div id="game-container"></div>
 
-    <!-- Start Screen -->
-    <div id="start-screen">
-        <div class="game-title">NEON SLOPE</div>
-        <div class="game-subtitle">Infinite 3D Runner</div>
-        <button class="start-btn" id="start-btn">Start Game</button>
-        <button class="start-btn gyro-btn" id="gyro-btn">Enable Gyroscope</button>
-        <div class="controls-info">
-            <span>PC:</span> Arrow Keys / A-D to steer<br>
-            <span>Mobile:</span> Tilt device or touch sides<br>
-            <span>Goal:</span> Avoid red obstacles, stay on track
-        </div>
+  <canvas id="game-canvas"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-stat">
+        <span class="hud-label">DISTANCE</span>
+        <span class="hud-value" id="score-value">0</span>
+      </div>
+      <div class="hud-stat hud-stat--right">
+        <span class="hud-label">BEST</span>
+        <span class="hud-value" id="best-value">0</span>
+      </div>
     </div>
-
-    <!-- HUD -->
-    <div id="hud">
-        <div class="hud-panel">
-            <div class="hud-label">Distance</div>
-            <div class="hud-value" id="score-display">0m</div>
-        </div>
-        <div class="hud-panel">
-            <div class="hud-label">Speed</div>
-            <div class="hud-value" id="speed-display">0</div>
-            <div class="speed-bar-container">
-                <div class="speed-bar" id="speed-bar"></div>
-            </div>
-        </div>
+    <div class="speed-gauge">
+      <span class="speed-text" id="speed-text">0 <small>km/h</small></span>
+      <div class="speed-fill" id="speed-fill"></div>
     </div>
+  </div>
 
-    <!-- Game Over Screen -->
-    <div id="game-over">
-        <div class="game-over-title">Game Over</div>
-        <div class="final-score">Score: <span id="final-score">0</span>m</div>
-        <div class="high-score">Best: <span id="high-score">0</span>m</div>
-        <button class="start-btn" id="restart-btn">Restart</button>
-        <div class="restart-hint">Press SPACE or TAP to restart</div>
+  <div id="start-screen" class="overlay">
+    <div class="overlay-panel">
+      <h1 class="title">NEON<span>SLOPE</span></h1>
+      <p class="subtitle">an infinite descent</p>
+
+      <p class="controls-hint" id="desktop-hint">
+        <kbd>A</kbd><kbd>&larr;</kbd> steer left &nbsp;&nbsp; <kbd>D</kbd><kbd>&rarr;</kbd> steer right
+      </p>
+      <p class="controls-hint hidden" id="mobile-hint">
+        tilt your phone left / right to steer
+      </p>
+
+      <button id="gyro-btn" class="btn btn--primary hidden">ENABLE TILT &amp; START</button>
+      <button id="start-btn" class="btn btn--primary">TAP TO START</button>
+
+      <p class="fine-print" id="gyro-fallback-msg"></p>
     </div>
-
-    <div class="touch-zone left" id="touch-left"></div>
-    <div class="touch-zone right" id="touch-right"></div>
-
-    <script>
-        // ==========================================
-        // NEON SLOPE - 3D Infinite Runner
-        // ==========================================
-
-        // ----- Game Configuration -----
-        const CONFIG = {
-            // Physics
-            GRAVITY: 25,
-            BASE_SPEED: 15,
-            MAX_SPEED: 45,
-            ACCELERATION: 0.5,
-            STEER_FORCE: 18,
-            STEER_DAMPING: 0.92,
-            LATERAL_LIMIT: 8,
-
-            // Track
-            SEGMENT_LENGTH: 10,
-            SEGMENT_WIDTH: 12,
-            VISIBLE_SEGMENTS: 40,
-            SPAWN_DISTANCE: 300,
-            DESPAWN_DISTANCE: 50,
-
-            // Camera
-            CAM_OFFSET: { x: 0, y: 5, z: 12 },
-            CAM_SMOOTH: 0.08,
-            FOV_BASE: 75,
-            FOV_MAX: 90,
-
-            // Visual
-            FOG_DENSITY: 0.015,
-            STAR_COUNT: 800,
-
-            // Mobile
-            GYRO_DEADZONE: 5,
-            GYRO_MAX_TILT: 30,
-            GYRO_SENSITIVITY: 1.5
-        };
-
-        // ----- Game State -----
-        const state = {
-            isPlaying: false,
-            isGameOver: false,
-            score: 0,
-            highScore: parseInt(localStorage.getItem('neonSlopeHighScore')) || 0,
-            speed: CONFIG.BASE_SPEED,
-            distance: 0,
-
-            // Player physics
-            pos: new THREE.Vector3(0, 2, 0),
-            vel: new THREE.Vector3(0, 0, 0),
-            steerInput: 0,
-
-            // Input
-            keys: { left: false, right: false },
-            gyroEnabled: false,
-            gyroBeta: 0,
-            touchLeft: false,
-            touchRight: false,
-
-            // Track
-            segments: [],
-            obstacles: [],
-            lastSpawnZ: 0,
-            segmentPool: [],
-            obstaclePool: [],
-
-            // Effects
-            shakeIntensity: 0,
-            particles: null,
-            particleData: []
-        };
-
-        // ----- Three.js Setup -----
-        const container = document.getElementById('game-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020617);
-        scene.fog = new THREE.FogExp2(0x020617, CONFIG.FOG_DENSITY);
-
-        const camera = new THREE.PerspectiveCamera(
-            CONFIG.FOV_BASE,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            400
-        );
-
-        const renderer = new THREE.WebGLRenderer({ 
-            antialias: false,
-            powerPreference: 'high-performance'
-        });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        // ----- Lighting -----
-        const ambientLight = new THREE.AmbientLight(0x06b6d4, 0.3);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0x22c55e, 0.8);
-        dirLight.position.set(10, 20, 10);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        scene.add(dirLight);
-
-        const pointLight = new THREE.PointLight(0x22c55e, 1, 30);
-        scene.add(pointLight);
-
-        // ----- Player Sphere -----
-        const sphereGeo = new THREE.SphereGeometry(0.8, 32, 32);
-        const sphereMat = new THREE.MeshPhysicalMaterial({
-            color: 0x22c55e,
-            emissive: 0x22c55e,
-            emissiveIntensity: 0.4,
-            metalness: 0.1,
-            roughness: 0.1,
-            transparent: true,
-            opacity: 0.95,
-            transmission: 0.2
-        });
-        const player = new THREE.Mesh(sphereGeo, sphereMat);
-        player.castShadow = true;
-        scene.add(player);
-
-        // Player glow
-        const playerGlow = new THREE.PointLight(0x22c55e, 2, 15);
-        player.add(playerGlow);
-
-        // ----- Starfield Background -----
-        const starGeo = new THREE.BufferGeometry();
-        const starPositions = new Float32Array(CONFIG.STAR_COUNT * 3);
-        const starColors = new Float32Array(CONFIG.STAR_COUNT * 3);
-
-        for (let i = 0; i < CONFIG.STAR_COUNT; i++) {
-            starPositions[i * 3] = (Math.random() - 0.5) * 400;
-            starPositions[i * 3 + 1] = (Math.random() - 0.5) * 200 + 50;
-            starPositions[i * 3 + 2] = (Math.random() - 0.5) * 400 - 100;
-
-            const color = new THREE.Color();
-            color.setHSL(Math.random() * 0.2 + 0.5, 0.8, 0.8);
-            starColors[i * 3] = color.r;
-            starColors[i * 3 + 1] = color.g;
-            starColors[i * 3 + 2] = color.b;
-        }
-
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starMat = new THREE.PointsMaterial({
-            size: 0.5,
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.8,
-            sizeAttenuation: true
-        });
-
-        const starField = new THREE.Points(starGeo, starMat);
-        scene.add(starField);
-
-        // ----- Track Generation System -----
-        const segmentGeo = new THREE.BoxGeometry(1, 1, 1);
-        const segmentMat = new THREE.MeshStandardMaterial({
-            color: 0x0f172a,
-            roughness: 0.7,
-            metalness: 0.5
-        });
-
-        const edgeGeo = new THREE.BoxGeometry(1, 1, 1);
-        const edgeMat = new THREE.MeshBasicMaterial({
-            color: 0x06b6d4,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const obstacleGeo = new THREE.BoxGeometry(1, 1, 1);
-        const obstacleMat = new THREE.MeshStandardMaterial({
-            color: 0xef4444,
-            emissive: 0xef4444,
-            emissiveIntensity: 0.6,
-            roughness: 0.3,
-            metalness: 0.4
-        });
-
-        // Grid texture for track surface
-        const gridCanvas = document.createElement('canvas');
-        gridCanvas.width = 128;
-        gridCanvas.height = 128;
-        const gridCtx = gridCanvas.getContext('2d');
-        gridCtx.fillStyle = '#0f172a';
-        gridCtx.fillRect(0, 0, 128, 128);
-        gridCtx.strokeStyle = '#06b6d4';
-        gridCtx.lineWidth = 2;
-        gridCtx.strokeRect(0, 0, 128, 128);
-        gridCtx.beginPath();
-        gridCtx.moveTo(64, 0);
-        gridCtx.lineTo(64, 128);
-        gridCtx.moveTo(0, 64);
-        gridCtx.lineTo(128, 64);
-        gridCtx.stroke();
-
-        const gridTexture = new THREE.CanvasTexture(gridCanvas);
-        gridTexture.wrapS = THREE.RepeatWrapping;
-        gridTexture.wrapT = THREE.RepeatWrapping;
-        gridTexture.repeat.set(1, 1);
-
-        const trackSurfaceMat = new THREE.MeshStandardMaterial({
-            map: gridTexture,
-            color: 0x0f172a,
-            roughness: 0.6,
-            metalness: 0.4,
-            emissive: 0x06b6d4,
-            emissiveIntensity: 0.05
-        });
-
-        class TrackSegment {
-            constructor() {
-                this.mesh = new THREE.Group();
-
-                // Main platform
-                this.platform = new THREE.Mesh(segmentGeo, trackSurfaceMat);
-                this.platform.receiveShadow = true;
-                this.mesh.add(this.platform);
-
-                // Edge lines
-                this.leftEdge = new THREE.Mesh(edgeGeo, edgeMat);
-                this.leftEdge.scale.set(0.15, 0.5, 1);
-                this.leftEdge.position.set(-CONFIG.SEGMENT_WIDTH / 2 - 0.1, 0.25, 0);
-                this.mesh.add(this.leftEdge);
-
-                this.rightEdge = new THREE.Mesh(edgeGeo, edgeMat);
-                this.rightEdge.scale.set(0.15, 0.5, 1);
-                this.rightEdge.position.set(CONFIG.SEGMENT_WIDTH / 2 + 0.1, 0.25, 0);
-                this.mesh.add(this.rightEdge);
-
-                // Glow lights on edges
-                this.leftGlow = new THREE.PointLight(0x06b6d4, 0.5, 5);
-                this.leftGlow.position.set(-CONFIG.SEGMENT_WIDTH / 2, 0.5, 0);
-                this.mesh.add(this.leftGlow);
-
-                this.rightGlow = new THREE.PointLight(0x06b6d4, 0.5, 5);
-                this.rightGlow.position.set(CONFIG.SEGMENT_WIDTH / 2, 0.5, 0);
-                this.mesh.add(this.rightGlow);
-
-                this.active = false;
-                this.hasObstacle = false;
-                this.obstacle = null;
-                this.slope = 0;
-            }
-
-            spawn(z, width, slopeType = 'flat') {
-                this.active = true;
-                this.mesh.visible = true;
-
-                let y = 0;
-                let slope = 0;
-
-                switch(slopeType) {
-                    case 'down':
-                        slope = -0.15;
-                        y = -2;
-                        break;
-                    case 'steep':
-                        slope = -0.25;
-                        y = -4;
-                        break;
-                    case 'ramp':
-                        slope = 0.2;
-                        y = 2;
-                        break;
-                    case 'narrow':
-                        width *= 0.6;
-                        break;
-                }
-
-                this.slope = slope;
-                this.platform.scale.set(width, 1, CONFIG.SEGMENT_LENGTH);
-                this.platform.position.y = y;
-                this.platform.rotation.x = slope;
-
-                this.leftEdge.position.x = -width / 2 - 0.1;
-                this.leftEdge.position.y = y + 0.25;
-                this.leftEdge.rotation.x = slope;
-                this.leftEdge.scale.z = CONFIG.SEGMENT_LENGTH;
-
-                this.rightEdge.position.x = width / 2 + 0.1;
-                this.rightEdge.position.y = y + 0.25;
-                this.rightEdge.rotation.x = slope;
-                this.rightEdge.scale.z = CONFIG.SEGMENT_LENGTH;
-
-                this.leftGlow.position.set(-width / 2, y + 0.5, 0);
-                this.rightGlow.position.set(width / 2, y + 0.5, 0);
-
-                this.mesh.position.set(0, 0, z);
-                scene.add(this.mesh);
-
-                return y + 1 + (slope * CONFIG.SEGMENT_LENGTH / 2);
-            }
-
-            despawn() {
-                this.active = false;
-                this.mesh.visible = false;
-                scene.remove(this.mesh);
-                if (this.obstacle) {
-                    this.removeObstacle();
-                }
-            }
-
-            addObstacle() {
-                if (!this.obstacle) {
-                    this.obstacle = new THREE.Mesh(obstacleGeo, obstacleMat);
-                    this.obstacle.castShadow = true;
-
-                    // Add glow to obstacle
-                    const obsGlow = new THREE.PointLight(0xef4444, 1, 8);
-                    this.obstacle.add(obsGlow);
-                }
-
-                const xPos = (Math.random() - 0.5) * (CONFIG.SEGMENT_WIDTH * 0.7);
-                const scale = 1.5 + Math.random() * 1.5;
-                this.obstacle.scale.set(scale, scale, scale);
-                this.obstacle.position.set(xPos, 1 + scale / 2, 0);
-                this.mesh.add(this.obstacle);
-                this.hasObstacle = true;
-            }
-
-            removeObstacle() {
-                if (this.obstacle) {
-                    this.mesh.remove(this.obstacle);
-                    this.hasObstacle = false;
-                }
-            }
-
-            getSurfaceY(localZ) {
-                return this.platform.position.y + Math.sin(this.platform.rotation.x) * localZ;
-            }
-
-            getBounds() {
-                const halfWidth = this.platform.scale.x / 2;
-                return {
-                    minX: -halfWidth,
-                    maxX: halfWidth,
-                    z: this.mesh.position.z,
-                    width: this.platform.scale.x
-                };
-            }
-        }
-
-        // Initialize object pools
-        for (let i = 0; i < CONFIG.VISIBLE_SEGMENTS; i++) {
-            state.segmentPool.push(new TrackSegment());
-        }
-
-        // ----- Particle System (Explosion) -----
-        const particleCount = 60;
-        const particleGeo = new THREE.BufferGeometry();
-        const pPositions = new Float32Array(particleCount * 3);
-        const pVelocities = [];
-        const pLifetimes = [];
-
-        for (let i = 0; i < particleCount; i++) {
-            pPositions[i * 3] = 0;
-            pPositions[i * 3 + 1] = 0;
-            pPositions[i * 3 + 2] = 0;
-            pVelocities.push(new THREE.Vector3());
-            pLifetimes.push(0);
-        }
-
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            color: 0xef4444,
-            size: 0.4,
-            transparent: true,
-            opacity: 0,
-            blending: THREE.AdditiveBlending
-        });
-
-        const particleSystem = new THREE.Points(particleGeo, particleMat);
-        scene.add(particleSystem);
-
-        function triggerExplosion(pos) {
-            state.shakeIntensity = 0.8;
-            particleMat.opacity = 1;
-            particleSystem.position.copy(pos);
-
-            for (let i = 0; i < particleCount; i++) {
-                pLifetimes[i] = 1.0;
-                pVelocities[i].set(
-                    (Math.random() - 0.5) * 15,
-                    (Math.random() - 0.5) * 15 + 5,
-                    (Math.random() - 0.5) * 15
-                );
-            }
-        }
-
-        function updateParticles(dt) {
-            if (particleMat.opacity <= 0.01) return;
-
-            const positions = particleGeo.attributes.position.array;
-            let active = false;
-
-            for (let i = 0; i < particleCount; i++) {
-                if (pLifetimes[i] > 0) {
-                    pLifetimes[i] -= dt * 2;
-                    positions[i * 3] += pVelocities[i].x * dt;
-                    positions[i * 3 + 1] += pVelocities[i].y * dt;
-                    positions[i * 3 + 2] += pVelocities[i].z * dt;
-                    pVelocities[i].y -= CONFIG.GRAVITY * dt;
-                    active = true;
-                } else {
-                    positions[i * 3] = 0;
-                    positions[i * 3 + 1] = 0;
-                    positions[i * 3 + 2] = 0;
-                }
-            }
-
-            particleGeo.attributes.position.needsUpdate = true;
-            particleMat.opacity = Math.max(0, particleMat.opacity - dt * 1.5);
-        }
-
-        // ----- Track Management -----
-        function getSegmentFromPool() {
-            for (let seg of state.segmentPool) {
-                if (!seg.active) return seg;
-            }
-            // Recycle oldest if all in use
-            let oldest = state.segments[0];
-            oldest.despawn();
-            state.segments.shift();
-            return oldest;
-        }
-
-        function spawnTrackSegment() {
-            const seg = getSegmentFromPool();
-
-            // Determine segment type based on distance/progression
-            const dist = state.distance;
-            let type = 'flat';
-            const rand = Math.random();
-
-            if (dist > 100) {
-                if (rand < 0.15) type = 'down';
-                else if (rand < 0.25) type = 'steep';
-                else if (rand < 0.35) type = 'ramp';
-                else if (rand < 0.45) type = 'narrow';
-            } else if (dist > 50) {
-                if (rand < 0.2) type = 'down';
-            }
-
-            const surfaceY = seg.spawn(state.lastSpawnZ, CONFIG.SEGMENT_WIDTH, type);
-
-            // Add obstacles on some segments (not first few)
-            if (dist > 30 && Math.random() < 0.3 && type !== 'ramp') {
-                seg.addObstacle();
-            }
-
-            state.segments.push(seg);
-            state.lastSpawnZ -= CONFIG.SEGMENT_LENGTH;
-
-            return surfaceY;
-        }
-
-        function initTrack() {
-            // Clear existing
-            state.segments.forEach(s => s.despawn());
-            state.segments = [];
-            state.lastSpawnZ = 0;
-
-            // Spawn initial track
-            for (let i = 0; i < CONFIG.VISIBLE_SEGMENTS; i++) {
-                spawnTrackSegment();
-            }
-        }
-
-        function updateTrack() {
-            // Spawn new segments ahead
-            while (state.lastSpawnZ > state.pos.z - CONFIG.SPAWN_DISTANCE) {
-                spawnTrackSegment();
-            }
-
-            // Remove old segments behind
-            for (let i = state.segments.length - 1; i >= 0; i--) {
-                const seg = state.segments[i];
-                if (seg.mesh.position.z > state.pos.z + CONFIG.DESPAWN_DISTANCE) {
-                    seg.despawn();
-                    state.segments.splice(i, 1);
-                }
-            }
-        }
-
-        // ----- Collision Detection -----
-        function checkCollisions() {
-            const playerRadius = 0.8;
-
-            for (let seg of state.segments) {
-                if (!seg.hasObstacle || !seg.obstacle) continue;
-
-                const segZ = seg.mesh.position.z;
-                const segLength = CONFIG.SEGMENT_LENGTH;
-
-                // Check if player is within this segment's Z range
-                if (state.pos.z < segZ + segLength / 2 && state.pos.z > segZ - segLength / 2) {
-                    const obsPos = new THREE.Vector3();
-                    seg.obstacle.getWorldPosition(obsPos);
-                    const obsScale = seg.obstacle.scale.x;
-
-                    const dx = Math.abs(state.pos.x - obsPos.x);
-                    const dy = Math.abs(state.pos.y - obsPos.y);
-                    const dz = Math.abs(state.pos.z - obsPos.z);
-
-                    // Simple AABB collision with sphere approximation
-                    if (dx < playerRadius + obsScale / 2 &&
-                        dy < playerRadius + obsScale / 2 &&
-                        dz < playerRadius + obsScale / 2) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        function getGroundHeight(x, z) {
-            for (let seg of state.segments) {
-                const segZ = seg.mesh.position.z;
-                const halfLen = CONFIG.SEGMENT_LENGTH / 2;
-
-                if (z <= segZ + halfLen && z >= segZ - halfLen) {
-                    const bounds = seg.getBounds();
-                    if (x >= bounds.minX && x <= bounds.maxX) {
-                        const localZ = z - segZ;
-                        return seg.getSurfaceY(localZ) + 0.5;
-                    }
-                }
-            }
-            return -100; // Far below = fall
-        }
-
-        // ----- Input Handling -----
-        function handleKeyDown(e) {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = true;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = true;
-            if (e.code === 'Space' && state.isGameOver) restartGame();
-        }
-
-        function handleKeyUp(e) {
-            if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = false;
-            if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = false;
-        }
-
-        function handleGyro(event) {
-            if (!state.gyroEnabled) return;
-
-            let tilt = event.gamma || 0;
-
-            // Apply deadzone
-            if (Math.abs(tilt) < CONFIG.GYRO_DEADZONE) {
-                tilt = 0;
-            } else {
-                tilt = tilt > 0 ? tilt - CONFIG.GYRO_DEADZONE : tilt + CONFIG.GYRO_DEADZONE;
-            }
-
-            // Clamp and normalize
-            tilt = Math.max(-CONFIG.GYRO_MAX_TILT, Math.min(CONFIG.GYRO_MAX_TILT, tilt));
-            state.gyroBeta = (tilt / CONFIG.GYRO_MAX_TILT) * CONFIG.GYRO_SENSITIVITY;
-        }
-
-        async function requestGyroPermission() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && 
-                typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const response = await DeviceOrientationEvent.requestPermission();
-                    if (response === 'granted') {
-                        state.gyroEnabled = true;
-                        window.addEventListener('deviceorientation', handleGyro);
-                        document.getElementById('gyro-btn').textContent = 'Gyroscope Enabled';
-                        document.getElementById('gyro-btn').style.background = '#22c55e';
-                    }
-                } catch (e) {
-                    console.log('Gyro permission denied');
-                }
-            } else {
-                // Non-iOS 13+ devices
-                state.gyroEnabled = true;
-                window.addEventListener('deviceorientation', handleGyro);
-                document.getElementById('gyro-btn').textContent = 'Gyroscope Enabled';
-                document.getElementById('gyro-btn').style.background = '#22c55e';
-            }
-        }
-
-        // Touch controls
-        const touchLeft = document.getElementById('touch-left');
-        const touchRight = document.getElementById('touch-right');
-
-        touchLeft.addEventListener('touchstart', (e) => { e.preventDefault(); state.touchLeft = true; });
-        touchLeft.addEventListener('touchend', (e) => { e.preventDefault(); state.touchLeft = false; });
-        touchRight.addEventListener('touchstart', (e) => { e.preventDefault(); state.touchRight = true; });
-        touchRight.addEventListener('touchend', (e) => { e.preventDefault(); state.touchRight = false; });
-
-        // ----- Game Logic -----
-        function getSteerInput() {
-            let input = 0;
-
-            if (state.keys.left || state.touchLeft) input -= 1;
-            if (state.keys.right || state.touchRight) input += 1;
-
-            if (state.gyroEnabled && Math.abs(state.gyroBeta) > 0.05) {
-                input += state.gyroBeta;
-            }
-
-            return Math.max(-1, Math.min(1, input));
-        }
-
-        function updatePhysics(dt) {
-            if (!state.isPlaying || state.isGameOver) return;
-
-            // Accelerate forward
-            state.speed = Math.min(state.speed + CONFIG.ACCELERATION * dt, CONFIG.MAX_SPEED);
-
-            // Forward movement
-            state.pos.z -= state.speed * dt;
-            state.distance += state.speed * dt;
-            state.score = Math.floor(state.distance);
-
-            // Steering with momentum
-            const steerInput = getSteerInput();
-            state.vel.x += steerInput * CONFIG.STEER_FORCE * dt;
-            state.vel.x *= CONFIG.STEER_DAMPING;
-            state.pos.x += state.vel.x * dt;
-
-            // Clamp lateral position
-            state.pos.x = Math.max(-CONFIG.LATERAL_LIMIT, Math.min(CONFIG.LATERAL_LIMIT, state.pos.x));
-
-            // Gravity and ground collision
-            const groundY = getGroundHeight(state.pos.x, state.pos.z);
-            state.vel.y -= CONFIG.GRAVITY * dt;
-            state.pos.y += state.vel.y * dt;
-
-            if (state.pos.y <= groundY) {
-                state.pos.y = groundY;
-                state.vel.y = 0;
-            }
-
-            // Check death conditions
-            if (state.pos.y < groundY - 8 || state.pos.y < -20) {
-                gameOver();
-                return;
-            }
-
-            // Check obstacle collision
-            if (checkCollisions()) {
-                triggerExplosion(state.pos.clone());
-                gameOver();
-                return;
-            }
-
-            // Update player mesh
-            player.position.copy(state.pos);
-            player.rotation.x -= state.speed * dt * 0.5;
-            player.rotation.z = -state.vel.x * 0.1;
-
-            // Update light position
-            pointLight.position.copy(state.pos);
-            pointLight.position.y += 2;
-        }
-
-        function updateCamera(dt) {
-            if (!state.isPlaying) return;
-
-            const targetPos = state.pos.clone();
-            targetPos.x += CONFIG.CAM_OFFSET.x;
-            targetPos.y += CONFIG.CAM_OFFSET.y;
-            targetPos.z += CONFIG.CAM_OFFSET.z;
-
-            // Smooth follow
-            camera.position.lerp(targetPos, CONFIG.CAM_SMOOTH);
-
-            // Look ahead
-            const lookTarget = state.pos.clone();
-            lookTarget.z -= 10;
-            camera.lookAt(lookTarget);
-
-            // FOV based on speed
-            const speedRatio = (state.speed - CONFIG.BASE_SPEED) / (CONFIG.MAX_SPEED - CONFIG.BASE_SPEED);
-            const targetFOV = CONFIG.FOV_BASE + speedRatio * (CONFIG.FOV_MAX - CONFIG.FOV_BASE);
-            camera.fov += (targetFOV - camera.fov) * 0.05;
-            camera.updateProjectionMatrix();
-
-            // Screen shake
-            if (state.shakeIntensity > 0) {
-                camera.position.x += (Math.random() - 0.5) * state.shakeIntensity;
-                camera.position.y += (Math.random() - 0.5) * state.shakeIntensity;
-                state.shakeIntensity *= 0.9;
-                if (state.shakeIntensity < 0.01) state.shakeIntensity = 0;
-            }
-        }
-
-        function updateHUD() {
-            document.getElementById('score-display').textContent = state.score + 'm';
-            document.getElementById('speed-display').textContent = Math.floor(state.speed);
-
-            const speedRatio = (state.speed - CONFIG.BASE_SPEED) / (CONFIG.MAX_SPEED - CONFIG.BASE_SPEED);
-            document.getElementById('speed-bar').style.width = (speedRatio * 100) + '%';
-
-            // Color shift based on speed
-            const bar = document.getElementById('speed-bar');
-            if (speedRatio > 0.7) {
-                bar.style.background = '#ef4444';
-                bar.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
-            } else if (speedRatio > 0.4) {
-                bar.style.background = '#f59e0b';
-                bar.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.5)';
-            } else {
-                bar.style.background = '#22c55e';
-                bar.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.5)';
-            }
-        }
-
-        function updateStarfield() {
-            const positions = starField.geometry.attributes.position.array;
-            for (let i = 0; i < CONFIG.STAR_COUNT; i++) {
-                positions[i * 3 + 2] += state.speed * 0.016 * 0.3;
-                if (positions[i * 3 + 2] > 100) {
-                    positions[i * 3 + 2] = -300;
-                }
-            }
-            starField.geometry.attributes.position.needsUpdate = true;
-        }
-
-        // ----- Game Flow Control -----
-        function startGame() {
-            state.isPlaying = true;
-            state.isGameOver = false;
-            state.score = 0;
-            state.distance = 0;
-            state.speed = CONFIG.BASE_SPEED;
-            state.pos.set(0, 2, 0);
-            state.vel.set(0, 0, 0);
-            state.shakeIntensity = 0;
-
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('game-over').classList.remove('active');
-            document.getElementById('hud').classList.add('active');
-
-            // Show touch zones on mobile
-            if ('ontouchstart' in window) {
-                touchLeft.style.display = 'block';
-                touchRight.style.display = 'block';
-            }
-
-            initTrack();
-        }
-
-        function gameOver() {
-            state.isGameOver = true;
-            state.isPlaying = false;
-
-            if (state.score > state.highScore) {
-                state.highScore = state.score;
-                localStorage.setItem('neonSlopeHighScore', state.highScore);
-            }
-
-            document.getElementById('final-score').textContent = state.score;
-            document.getElementById('high-score').textContent = state.highScore;
-            document.getElementById('game-over').classList.add('active');
-            document.getElementById('hud').classList.remove('active');
-
-            touchLeft.style.display = 'none';
-            touchRight.style.display = 'none';
-        }
-
-        function restartGame() {
-            document.getElementById('game-over').classList.remove('active');
-            startGame();
-        }
-
-        // ----- Event Listeners -----
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-
-        document.getElementById('start-btn').addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', restartGame);
-        document.getElementById('gyro-btn').addEventListener('click', requestGyroPermission);
-
-        // Global tap to restart when game over
-        window.addEventListener('touchstart', (e) => {
-            if (state.isGameOver && e.target.id !== 'restart-btn') {
-                restartGame();
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // ----- Main Game Loop -----
-        let lastTime = 0;
-
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            const dt = Math.min((time - lastTime) / 1000, 0.1);
-            lastTime = time;
-
-            if (dt <= 0) return;
-
-            updatePhysics(dt);
-            updateTrack();
-            updateCamera(dt);
-            updateParticles(dt);
-            updateStarfield();
-
-            if (state.isPlaying) {
-                updateHUD();
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        // Start render loop
-        animate(0);
-
-        // Initial camera position
-        camera.position.set(0, 8, 15);
-        camera.lookAt(0, 0, 0);
-    </script>
+  </div>
+
+  <div id="gameover-screen" class="overlay hidden">
+    <div class="overlay-panel">
+      <h2 class="title title--sm">RUN TERMINATED</h2>
+      <div class="stats-row">
+        <div>
+          <span class="hud-label">DISTANCE</span>
+          <span class="hud-value" id="final-score">0</span>
+        </div>
+        <div>
+          <span class="hud-label">BEST</span>
+          <span class="hud-value" id="final-best">0</span>
+        </div>
+      </div>
+      <p id="new-best-msg" class="new-best hidden">NEW BEST</p>
+      <button id="restart-btn" class="btn btn--primary">RESTART</button>
+      <p class="fine-print">press SPACE or tap anywhere to restart</p>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ================================================================
+   CONFIG & CONSTANTS
+================================================================ */
+const COLORS = {
+  player: 0x22c55e,
+  track:  0x0f172a,
+  edge:   0x06b6d4,
+  hazard: 0xef4444,
+  void:   0x020617
+};
+
+const CONFIG = {
+  segmentLength: 24,
+  baseWidth: 11,
+  narrowWidth: 5,
+
+  baseForwardSpeed: 20,
+  maxForwardSpeed: 62,
+  speedRampRate: 0.22,
+
+  gravity: 46,
+  lateralAccel: 70,
+  lateralDamping: 4.5,
+  maxLateralSpeed: 30,
+  maxTrackHalfSpan: 40,
+
+  playerRadius: 0.9,
+  deathFallDepth: 18,
+
+  genAheadSegments: 8,
+  despawnBehindDistance: 40,
+  cameraFollowLerp: 6,
+
+  deadZoneDeg: 5,
+  maxTiltDeg: 30
+};
+CONFIG.genAheadDistance = CONFIG.genAheadSegments * CONFIG.segmentLength;
+
+/* ================================================================
+   STATE
+================================================================ */
+const state = {
+  running: false,
+  gameOver: false,
+  clock: new THREE.Clock(),
+  elapsed: 0,
+  distance: 0,
+  forwardSpeed: CONFIG.baseForwardSpeed,
+
+  player: { x:0, y:CONFIG.playerRadius, z:0, velX:0, velY:0, grounded:true },
+
+  keys: { left:false, right:false },
+  touchDir: 0,
+  gyro: { enabled:false, value:0 },
+
+  segments: [],
+  nextSpawnZ: 0,
+  segmentCount: 0,
+
+  highScore: Number(localStorage.getItem('neonSlopeHighScore') || 0),
+  shake: 0
+};
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                  (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+/* ================================================================
+   THREE.JS SETUP
+================================================================ */
+let renderer, scene, camera;
+let playerMesh, playerLight, starField;
+let particles = [];
+
+const canvas = document.getElementById('game-canvas');
+
+const sharedMat = {
+  track:  new THREE.MeshStandardMaterial({ color: COLORS.track, metalness:0.45, roughness:0.55, side: THREE.DoubleSide }),
+  edge:   new THREE.LineBasicMaterial({ color: COLORS.edge, transparent:true, opacity:0.9, blending: THREE.AdditiveBlending, depthWrite:false }),
+  hazard: new THREE.MeshStandardMaterial({ color: COLORS.hazard, emissive: COLORS.hazard, emissiveIntensity:0.75, metalness:0.2, roughness:0.4 })
+};
+
+function initScene(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(COLORS.void);
+  scene.fog = new THREE.FogExp2(COLORS.void, 0.014);
+
+  camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 400);
+  camera.position.set(0, 6, 10);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  scene.add(new THREE.AmbientLight(0x8899ff, 0.55));
+
+  const dir = new THREE.DirectionalLight(0xffffff, 0.55);
+  dir.position.set(-6, 14, 8);
+  scene.add(dir);
+
+  playerLight = new THREE.PointLight(COLORS.player, 2.4, 24, 2);
+  scene.add(playerLight);
+
+  buildStarfield();
+  buildPlayer();
+  resetState(); // build an idle track for the start screen backdrop
+
+  window.addEventListener('resize', onResize);
+}
+
+function onResize(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function buildStarfield(){
+  const count = 1400;
+  const positions = new Float32Array(count*3);
+  for (let i=0;i<count;i++){
+    const radius = 120 + Math.random()*180;
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.random()*Math.PI*0.6 + 0.05;
+    positions[i*3]   = Math.cos(theta)*Math.sin(phi)*radius;
+    positions[i*3+1] = Math.cos(phi)*radius*0.6 + 20;
+    positions[i*3+2] = Math.sin(theta)*Math.sin(phi)*radius - 100;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  const mat = new THREE.PointsMaterial({ color:0x8fd8ff, size:1.1, sizeAttenuation:true, transparent:true, opacity:0.85 });
+  starField = new THREE.Points(geo, mat);
+  scene.add(starField);
+}
+
+function buildPlayer(){
+  const geo = new THREE.SphereGeometry(CONFIG.playerRadius, 24, 24);
+  const mat = new THREE.MeshStandardMaterial({
+    color: COLORS.player, emissive: COLORS.player, emissiveIntensity:0.9,
+    metalness:0.3, roughness:0.25, transparent:true, opacity:0.92
+  });
+  playerMesh = new THREE.Mesh(geo, mat);
+
+  const wireGeo = new THREE.SphereGeometry(CONFIG.playerRadius*1.05, 10, 10);
+  const wireMat = new THREE.MeshBasicMaterial({ color:0xbbffcc, wireframe:true, transparent:true, opacity:0.35 });
+  playerMesh.add(new THREE.Mesh(wireGeo, wireMat));
+
+  scene.add(playerMesh);
+}
+
+/* ================================================================
+   TRACK GEOMETRY BUILDERS
+================================================================ */
+// Builds a sloped rectangular platform (wedge prism) from local z=0 (yStart)
+// to local z=-length (yEnd). This keeps the visual surface height in exact
+// linear agreement with the physics ground-sampling function below.
+function buildRampGeometry(width, length, yStart, yEnd){
+  const hw = width/2;
+  const bottomY = Math.min(yStart, yEnd) - 3;
+  const positions = [
+    // top
+    -hw,yStart,0,   hw,yStart,0,   hw,yEnd,-length,   -hw,yEnd,-length,
+    // left wall
+    -hw,yStart,0,   -hw,yEnd,-length,   -hw,bottomY,-length,   -hw,bottomY,0,
+    // right wall
+    hw,yStart,0,   hw,bottomY,0,   hw,bottomY,-length,   hw,yEnd,-length,
+    // start cap
+    -hw,yStart,0,   -hw,bottomY,0,   hw,bottomY,0,   hw,yStart,0,
+    // end cap
+    -hw,yEnd,-length,   hw,yEnd,-length,   hw,bottomY,-length,   -hw,bottomY,-length
+  ];
+  const idx = [];
+  for (let f=0; f<5; f++){ const o=f*4; idx.push(o,o+1,o+2, o,o+2,o+3); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildEdgeGeometry(width, length, yStart, yEnd){
+  const hw = width/2, e = 0.03;
+  const pts = [
+    -hw,yStart+e,0,    hw,yStart+e,0,
+     hw,yStart+e,0,    hw,yEnd+e,-length,
+     hw,yEnd+e,-length, -hw,yEnd+e,-length,
+    -hw,yEnd+e,-length, -hw,yStart+e,0
+  ];
+  const rungs = Math.max(1, Math.floor(length/4));
+  for (let i=1;i<rungs;i++){
+    const t = i/rungs;
+    const z = -t*length;
+    const y = yStart + (yEnd-yStart)*t + e;
+    pts.push(-hw,y,z, hw,y,z);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  return geo;
+}
+
+function makeSlopeSegment(type, zStart, length, width, yStart, yEnd){
+  const mesh = new THREE.Mesh(buildRampGeometry(width, length, yStart, yEnd), sharedMat.track);
+  const edges = new THREE.LineSegments(buildEdgeGeometry(width, length, yStart, yEnd), sharedMat.edge);
+  const group = new THREE.Group();
+  group.add(mesh); group.add(edges);
+  group.position.set(0,0,zStart);
+
+  return { type, zStart, zEnd: zStart-length, yStart, yEnd, width, lanes:null, group, hazards:[] };
+}
+
+function makeSplitSegment(zStart, length, yStart){
+  const laneWidth = 3.6, gapHalf = 2.2;
+  const yEnd = yStart - (0.5 + Math.random());
+  const group = new THREE.Group();
+  group.position.set(0,0,zStart);
+
+  const lanes = [];
+  [-1,1].forEach(side => {
+    const cx = side * (gapHalf + laneWidth/2);
+    const mesh = new THREE.Mesh(buildRampGeometry(laneWidth, length, yStart, yEnd), sharedMat.track);
+    mesh.position.x = cx;
+    const edges = new THREE.LineSegments(buildEdgeGeometry(laneWidth, length, yStart, yEnd), sharedMat.edge);
+    edges.position.x = cx;
+    group.add(mesh); group.add(edges);
+    lanes.push({ cx, halfWidth: laneWidth/2 });
+  });
+
+  return { type:'split', zStart, zEnd: zStart-length, yStart, yEnd, width:null, lanes, group, hazards:[] };
+}
+
+function makeGapSegment(zStart, length, yStart, yEnd){
+  const group = new THREE.Group();
+  group.position.set(0,0,zStart);
+
+  const hw = CONFIG.baseWidth/2;
+  const pts = [ -hw,yStart+0.05,0,  -hw,yEnd+0.05,-length,   hw,yStart+0.05,0,  hw,yEnd+0.05,-length ];
+  const railGeo = new THREE.BufferGeometry();
+  railGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  group.add(new THREE.LineSegments(railGeo, sharedMat.edge));
+
+  return { type:'gap', zStart, zEnd: zStart-length, yStart, yEnd, width: CONFIG.baseWidth, lanes:null, group, hazards:[] };
+}
+
+function hazardChance(distance){ return Math.min(0.15 + distance/2000, 0.5); }
+
+function addHazards(segment){
+  if (Math.random() > hazardChance(state.distance)) return;
+  const count = 1 + (Math.random() < 0.3 ? 1 : 0);
+  const length = segment.zStart - segment.zEnd;
+
+  for (let i=0;i<count;i++){
+    const hw = (segment.width || 8)/2 - 1.2;
+    if (hw <= 0.5) continue;
+    const baseX = (Math.random()*2 - 1) * hw;
+    const z = -(0.25 + Math.random()*0.5) * length;
+    const t = -z/length;
+    const groundY = segment.yStart + (segment.yEnd - segment.yStart) * t;
+    const size = 1.8;
+    const moving = Math.random() < 0.5 && hw > 1.5;
+
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(size,size,size), sharedMat.hazard);
+    mesh.position.set(baseX, groundY + size/2, z);
+    segment.group.add(mesh);
+
+    segment.hazards.push({
+      mesh, baseX, halfSize: size/2, moving,
+      amplitude: moving ? Math.min(hw - Math.abs(baseX)*0.3, 3) : 0,
+      speed: 1.2 + Math.random()*1.2,
+      phase: Math.random()*Math.PI*2,
+      maxX: hw
+    });
+  }
+}
+
+/* ================================================================
+   PROCEDURAL TRACK GENERATION
+================================================================ */
+function pickRandomType(){
+  const d = state.distance;
+  const weights = [
+    { type:'flat',    w: 6 },
+    { type:'incline', w: d>60  ? 3 : 1 },
+    { type:'narrow',  w: d>100 ? 3 : 0 },
+    { type:'split',   w: d>220 ? 2 : 0 },
+    { type:'ramp',    w: d>150 ? 2 : 0 }
+  ];
+  const total = weights.reduce((s,x)=>s+x.w,0);
+  let r = Math.random()*total;
+  for (const item of weights){ if (r < item.w) return item.type; r -= item.w; }
+  return 'flat';
+}
+
+function buildSegment(type, zStart, yStart, prev){
+  switch(type){
+    case 'flat': {
+      const length = CONFIG.segmentLength * (0.85 + Math.random()*0.3);
+      const yEnd = yStart - Math.random()*1.4;
+      const seg = makeSlopeSegment('flat', zStart, length, CONFIG.baseWidth, yStart, yEnd);
+      addHazards(seg);
+      return seg;
+    }
+    case 'incline': {
+      const length = CONFIG.segmentLength * 0.8;
+      const yEnd = yStart - (3 + Math.random()*2.5);
+      const seg = makeSlopeSegment('incline', zStart, length, CONFIG.baseWidth, yStart, yEnd);
+      addHazards(seg);
+      return seg;
+    }
+    case 'narrow': {
+      const length = CONFIG.segmentLength * 0.8;
+      const yEnd = yStart - Math.random()*1.2;
+      return makeSlopeSegment('narrow', zStart, length, CONFIG.narrowWidth, yStart, yEnd);
+    }
+    case 'split': {
+      const length = CONFIG.segmentLength * 0.9;
+      return makeSplitSegment(zStart, length, yStart);
+    }
+    case 'ramp': {
+      const length = 16;
+      const rise = 5 + Math.random()*3;
+      return makeSlopeSegment('ramp', zStart, length, CONFIG.baseWidth, yStart, yStart+rise);
+    }
+    case 'gap': {
+      const ramp = prev;
+      const rampLen = ramp.zStart - ramp.zEnd;
+      const exitVel = Math.max(((ramp.yEnd-ramp.yStart)/rampLen) * state.forwardSpeed, 4);
+      const g = CONFIG.gravity;
+      const totalAir = 2*exitVel/g;
+      const maxDist = state.forwardSpeed*totalAir;
+      const gapLength = THREE.MathUtils.clamp(maxDist*0.58, 6, 32);
+      const t = gapLength/state.forwardSpeed;
+      const landingY = ramp.yEnd + exitVel*t - 0.5*g*t*t;
+      return makeGapSegment(zStart, gapLength, ramp.yEnd, landingY);
+    }
+    default:
+      return buildSegment('flat', zStart, yStart, prev);
+  }
+}
+
+function generateNextSegment(){
+  const zStart = state.nextSpawnZ;
+  const prev = state.segments[state.segments.length-1];
+  const yStart = prev ? prev.yEnd : 0;
+
+  let type;
+  if (prev && prev.type === 'ramp') type = 'gap';
+  else if (prev && prev.type === 'gap') type = 'flat';
+  else if (state.segmentCount < 4) type = 'flat';
+  else type = pickRandomType();
+
+  const seg = buildSegment(type, zStart, yStart, prev);
+  state.segments.push(seg);
+  scene.add(seg.group);
+  state.nextSpawnZ = seg.zEnd;
+  state.segmentCount++;
+}
+
+function disposeSegment(seg){
+  seg.group.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
+}
+
+function manageTrack(){
+  while ((state.player.z - state.nextSpawnZ) < CONFIG.genAheadDistance){
+    generateNextSegment();
+  }
+  while (state.segments.length > 2 && (state.segments[0].zStart - state.player.z) > CONFIG.despawnBehindDistance){
+    const old = state.segments.shift();
+    scene.remove(old.group);
+    disposeSegment(old);
+  }
+}
+
+/* ================================================================
+   GROUND SAMPLING / PHYSICS
+================================================================ */
+function getSegmentAtZ(z){
+  for (let i=0;i<state.segments.length;i++){
+    const s = state.segments[i];
+    if (z <= s.zStart && z > s.zEnd) return s;
+  }
+  return null;
+}
+
+function sampleGround(x, z){
+  const seg = getSegmentAtZ(z);
+  if (!seg) return { hasGround:false, y: state.player.y - 100, seg:null };
+
+  const t = (seg.zStart - z) / (seg.zStart - seg.zEnd);
+  const refY = seg.yStart + (seg.yEnd - seg.yStart) * t;
+
+  if (seg.type === 'gap') return { hasGround:false, y:refY, seg };
+
+  if (seg.type === 'split'){
+    for (const lane of seg.lanes){
+      if (x >= lane.cx - lane.halfWidth && x <= lane.cx + lane.halfWidth) return { hasGround:true, y:refY, seg };
+    }
+    return { hasGround:false, y:refY, seg };
+  }
+
+  const hw = seg.width/2;
+  if (x >= -hw && x <= hw) return { hasGround:true, y:refY, seg };
+  return { hasGround:false, y:refY, seg };
+}
+
+function getSteerInput(){
+  const kb = (state.keys.right?1:0) - (state.keys.left?1:0);
+  if (kb !== 0) return kb;
+  if (state.gyro.enabled) return state.gyro.value;
+  return state.touchDir;
+}
+
+function checkHazards(seg, p){
+  for (const h of seg.hazards){
+    const worldX = h.mesh.position.x;
+    const worldY = h.mesh.position.y;
+    const worldZ = seg.zStart + h.mesh.position.z;
+    const dx = Math.max(Math.abs(p.x-worldX)-h.halfSize, 0);
+    const dy = Math.max(Math.abs(p.y-worldY)-h.halfSize, 0);
+    const dz = Math.max(Math.abs(p.z-worldZ)-h.halfSize, 0);
+    if (dx*dx + dy*dy + dz*dz < CONFIG.playerRadius*CONFIG.playerRadius){
+      triggerGameOver(true);
+      return;
+    }
+  }
+}
+
+function updatePhysicsStep(dt){
+  const p = state.player;
+  state.forwardSpeed = Math.min(CONFIG.baseForwardSpeed + state.elapsed*CONFIG.speedRampRate, CONFIG.maxForwardSpeed);
+
+  const steer = getSteerInput();
+  p.velX += steer * CONFIG.lateralAccel * dt;
+  p.velX -= p.velX * Math.min(CONFIG.lateralDamping*dt, 1);
+  p.velX = THREE.MathUtils.clamp(p.velX, -CONFIG.maxLateralSpeed, CONFIG.maxLateralSpeed);
+  p.x = THREE.MathUtils.clamp(p.x + p.velX*dt, -CONFIG.maxTrackHalfSpan, CONFIG.maxTrackHalfSpan);
+
+  p.z -= state.forwardSpeed*dt;
+  state.distance = -p.z;
+
+  const ground = sampleGround(p.x, p.z);
+  const surfaceY = ground.hasGround ? ground.y + CONFIG.playerRadius : null;
+
+  if (surfaceY !== null && p.y <= surfaceY + 0.5){
+    p.velY = dt > 0 ? (surfaceY - p.y)/dt : 0;
+    p.y = surfaceY;
+    p.grounded = true;
+  } else {
+    p.velY -= CONFIG.gravity*dt;
+    p.y += p.velY*dt;
+    p.grounded = false;
+  }
+
+  if (!ground.seg || (ground.y - p.y) > CONFIG.deathFallDepth){
+    triggerGameOver(false);
+    return;
+  }
+
+  checkHazards(ground.seg, p);
+  const idx = state.segments.indexOf(ground.seg);
+  if (idx >= 0 && state.segments[idx+1]) checkHazards(state.segments[idx+1], p);
+}
+
+function updateHazards(t){
+  for (const seg of state.segments){
+    for (const h of seg.hazards){
+      if (!h.moving) continue;
+      let x = h.baseX + Math.sin(t*h.speed + h.phase)*h.amplitude;
+      h.mesh.position.x = THREE.MathUtils.clamp(x, -h.maxX, h.maxX);
+    }
+  }
+}
+
+/* ================================================================
+   PARTICLES (death explosion)
+================================================================ */
+function spawnExplosion(pos){
+  clearParticles();
+  const count = 28;
+  for (let i=0;i<count;i++){
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35,0.35,0.35),
+      new THREE.MeshBasicMaterial({ color: Math.random()<0.5?COLORS.player:COLORS.hazard, transparent:true })
+    );
+    mesh.position.copy(pos);
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.random()*Math.PI;
+    const speed = 6 + Math.random()*10;
+    const vel = new THREE.Vector3(
+      Math.sin(phi)*Math.cos(theta),
+      Math.cos(phi),
+      Math.sin(phi)*Math.sin(theta)
+    ).multiplyScalar(speed);
+    scene.add(mesh);
+    particles.push({ mesh, vel, life:1.0 });
+  }
+}
+
+function updateParticles(dt){
+  for (let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    p.vel.y -= CONFIG.gravity*0.6*dt;
+    p.mesh.position.addScaledVector(p.vel, dt);
+    p.life -= dt*0.8;
+    p.mesh.material.opacity = Math.max(p.life,0);
+    p.mesh.scale.setScalar(Math.max(p.life,0.05));
+    if (p.life <= 0){
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+      particles.splice(i,1);
+    }
+  }
+}
+
+function clearParticles(){
+  particles.forEach(p => { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); });
+  particles = [];
+}
+
+/* ================================================================
+   CAMERA
+================================================================ */
+const camTargetPos = new THREE.Vector3();
+const camLookTarget = new THREE.Vector3();
+
+function updateCamera(dt){
+  const p = state.player;
+  const speedT = THREE.MathUtils.clamp(
+    (state.forwardSpeed - CONFIG.baseForwardSpeed) / (CONFIG.maxForwardSpeed - CONFIG.baseForwardSpeed), 0, 1
+  );
+
+  const targetFov = 65 + speedT*12;
+  camera.fov += (targetFov - camera.fov) * Math.min(dt*3, 1);
+  camera.updateProjectionMatrix();
+
+  const camHeight = 5.5 + speedT*0.6;
+  const camDist   = 9 + speedT*1.5;
+  camTargetPos.set(p.x*0.6, p.y + camHeight, p.z + camDist);
+  camera.position.lerp(camTargetPos, Math.min(dt*CONFIG.cameraFollowLerp, 1));
+
+  if (state.shake > 0){
+    camera.position.x += (Math.random()-0.5)*state.shake;
+    camera.position.y += (Math.random()-0.5)*state.shake;
+    state.shake = Math.max(0, state.shake - dt*1.5);
+  }
+
+  camLookTarget.set(p.x*0.8, p.y+0.5, p.z-6);
+  camera.lookAt(camLookTarget);
+}
+
+/* ================================================================
+   HUD
+================================================================ */
+const el = {
+  score: document.getElementById('score-value'),
+  best: document.getElementById('best-value'),
+  speedText: document.getElementById('speed-text'),
+  speedFill: document.getElementById('speed-fill'),
+  hud: document.getElementById('hud'),
+  startScreen: document.getElementById('start-screen'),
+  gameOverScreen: document.getElementById('gameover-screen'),
+  finalScore: document.getElementById('final-score'),
+  finalBest: document.getElementById('final-best'),
+  newBestMsg: document.getElementById('new-best-msg'),
+  desktopHint: document.getElementById('desktop-hint'),
+  mobileHint: document.getElementById('mobile-hint'),
+  gyroBtn: document.getElementById('gyro-btn'),
+  startBtn: document.getElementById('start-btn'),
+  restartBtn: document.getElementById('restart-btn'),
+  gyroMsg: document.getElementById('gyro-fallback-msg')
+};
+
+function updateHUD(){
+  el.score.textContent = Math.floor(state.distance);
+  el.best.textContent = state.highScore;
+  const kmh = Math.round(state.forwardSpeed*3.1);
+  el.speedText.innerHTML = kmh + ' <small>km/h</small>';
+  const pct = THREE.MathUtils.clamp(
+    ((state.forwardSpeed-CONFIG.baseForwardSpeed)/(CONFIG.maxForwardSpeed-CONFIG.baseForwardSpeed))*100, 0, 100
+  );
+  el.speedFill.style.width = pct + '%';
+}
+
+/* ================================================================
+   GAME FLOW
+================================================================ */
+function resetState(){
+  state.segments.forEach(s => { scene.remove(s.group); disposeSegment(s); });
+  state.segments = [];
+  state.nextSpawnZ = 0;
+  state.segmentCount = 0;
+  state.distance = 0;
+  state.elapsed = 0;
+  state.forwardSpeed = CONFIG.baseForwardSpeed;
+
+  state.player.x = 0; state.player.z = 0;
+  state.player.velX = 0; state.player.velY = 0;
+  state.player.y = CONFIG.playerRadius;
+  state.player.grounded = true;
+
+  state.shake = 0;
+  clearParticles();
+
+  manageTrack();
+
+  if (playerMesh) playerMesh.position.set(0, state.player.y, 0);
+}
+
+function startGame(){
+  resetState();
+  el.startScreen.classList.add('hidden');
+  el.gameOverScreen.classList.add('hidden');
+  el.hud.classList.remove('hidden');
+  state.running = true;
+  state.gameOver = false;
+  state.clock.start();
+}
+
+function restartGame(){
+  if (!state.gameOver) return;
+  startGame();
+}
+
+function triggerGameOver(exploded){
+  if (state.gameOver) return;
+  state.gameOver = true;
+  state.running = false;
+  state.shake = 0.6;
+
+  if (exploded) spawnExplosion(playerMesh.position.clone());
+
+  const dist = Math.floor(state.distance);
+  if (dist > state.highScore){
+    state.highScore = dist;
+    localStorage.setItem('neonSlopeHighScore', String(dist));
+    el.newBestMsg.classList.remove('hidden');
+  } else {
+    el.newBestMsg.classList.add('hidden');
+  }
+
+  el.finalScore.textContent = dist;
+  el.finalBest.textContent = state.highScore;
+  el.hud.classList.add('hidden');
+  el.gameOverScreen.classList.remove('hidden');
+}
+
+/* ================================================================
+   INPUT
+================================================================ */
+function setupInput(){
+  window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA'){ state.keys.left = true; e.preventDefault(); }
+    if (e.code === 'ArrowRight' || e.code === 'KeyD'){ state.keys.right = true; e.preventDefault(); }
+    if (e.code === 'Space'){
+      e.preventDefault();
+      if (state.gameOver) restartGame();
+      else if (!state.running) startGame();
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') state.keys.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') state.keys.right = false;
+  });
+
+  function handleTouch(e){
+    if (!e.touches.length){ state.touchDir = 0; return; }
+    const x = e.touches[0].clientX;
+    state.touchDir = x < window.innerWidth/2 ? -1 : 1;
+  }
+  canvas.addEventListener('touchstart', handleTouch, { passive:true });
+  canvas.addEventListener('touchmove', handleTouch, { passive:true });
+  canvas.addEventListener('touchend', () => { state.touchDir = 0; }, { passive:true });
+  canvas.addEventListener('touchcancel', () => { state.touchDir = 0; }, { passive:true });
+}
+
+function handleOrientation(e){
+  if (e.gamma == null) return;
+  let gamma = THREE.MathUtils.clamp(e.gamma, -CONFIG.maxTiltDeg, CONFIG.maxTiltDeg);
+  const dz = CONFIG.deadZoneDeg;
+  let v = 0;
+  if (Math.abs(gamma) > dz){
+    v = (Math.abs(gamma)-dz) / (CONFIG.maxTiltDeg-dz) * Math.sign(gamma);
+  }
+  state.gyro.value = THREE.MathUtils.clamp(v, -1, 1);
+}
+
+function enableGyro(){
+  const hasAPI = typeof DeviceOrientationEvent !== 'undefined';
+  const needsPermission = hasAPI && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+  if (needsPermission){
+    DeviceOrientationEvent.requestPermission().then(resp => {
+      if (resp === 'granted'){
+        window.addEventListener('deviceorientation', handleOrientation);
+        state.gyro.enabled = true;
+        el.gyroMsg.textContent = '';
+      } else {
+        el.gyroMsg.textContent = 'Tilt permission denied — using touch controls instead.';
+        state.gyro.enabled = false;
+      }
+    }).catch(() => {
+      el.gyroMsg.textContent = 'Tilt unavailable — using touch controls instead.';
+      state.gyro.enabled = false;
+    });
+  } else if (hasAPI){
+    window.addEventListener('deviceorientation', handleOrientation);
+    state.gyro.enabled = true;
+  } else {
+    el.gyroMsg.textContent = 'Gyroscope not supported on this device — using touch controls.';
+    state.gyro.enabled = false;
+  }
+}
+
+function setupUI(){
+  if (isMobile){
+    el.desktopHint.classList.add('hidden');
+    el.mobileHint.classList.remove('hidden');
+    el.gyroBtn.classList.remove('hidden');
+    el.startBtn.textContent = 'START (TOUCH CONTROLS)';
+  }
+
+  el.gyroBtn.addEventListener('click', () => { enableGyro(); startGame(); });
+  el.startBtn.addEventListener('click', () => { startGame(); });
+  el.gameOverScreen.addEventListener('click', () => { restartGame(); });
+
+  setupInput();
+}
+
+/* ================================================================
+   MAIN LOOP
+================================================================ */
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(state.clock.getDelta(), 0.05);
+
+  if (state.running){
+    state.elapsed += dt;
+    updatePhysicsStep(dt);
+    if (state.running){ // may have just been set false by a death this frame
+      manageTrack();
+      updateHazards(state.elapsed);
+    }
+    updateHUD();
+  }
+  if (state.gameOver){
+    updateParticles(dt);
+  }
+
+  const p = state.player;
+  playerMesh.position.set(p.x, p.y, p.z);
+  playerMesh.rotation.x -= state.forwardSpeed*dt*0.15;
+  playerMesh.rotation.z = THREE.MathUtils.clamp(-p.velX*0.04, -0.5, 0.5);
+  playerLight.position.set(p.x, p.y+1, p.z+1);
+
+  updateCamera(dt);
+  renderer.render(scene, camera);
+}
+
+/* ================================================================
+   BOOT
+================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initScene();
+  setupUI();
+  requestAnimationFrame(animate);
+});
+
+})();
+</script>
 </body>
 </html>
