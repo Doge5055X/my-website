@@ -1,798 +1,212 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>NEON SLOPE — Shattered Track</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
 <style>
-  :root{
-    --void:#000000;
-    --track:#0a0a0a;
-    --cyan:#06b6d4;
-    --green:#10b981;
-    --red:#ef4444;
-    --ink:#dceeff;
-    --panel-border: rgba(16, 185, 129, 0.45);
-  }
-
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
-  html,body{
-    margin:0; padding:0; width:100%; height:100%;
-    background:var(--void);
-    color:var(--ink);
-    font-family:'Rajdhani',sans-serif;
-    overflow:hidden;
-    overscroll-behavior:none;
-  }
-
-  #game-canvas{
-    position:fixed; inset:0;
-    display:block;
-    width:100%; height:100%;
-    touch-action:none;
-  }
-
-  .hidden{ display:none !important; }
-
-  /* ---------- HUD ---------- */
-  #hud{
-    position:fixed; inset:0;
-    pointer-events:none;
-    padding: max(16px, env(safe-area-inset-top)) 20px 20px 20px;
-    z-index:5;
-    display:flex; flex-direction:column; justify-content:space-between;
-  }
-  .hud-top{
-    display:flex; justify-content:space-between; align-items:flex-start;
-  }
-  .hud-stat{ display:flex; flex-direction:column; gap:2px; }
-  .hud-stat--right{ align-items:flex-end; }
-  .hud-label{
-    font-size:11px; letter-spacing:3px; font-weight:600;
-    color:var(--green); opacity:0.85; text-shadow:0 0 8px rgba(16,185,129,0.8);
-  }
-  .hud-value{
-    font-family:'Orbitron',sans-serif;
-    font-size:clamp(22px,5vw,32px); font-weight:800;
-    color:#eafff3;
-    text-shadow:0 0 12px rgba(16,185,129,0.75), 0 0 2px #fff;
-    line-height:1.1;
-  }
-  #best-value{ color:#bff2ff; text-shadow:0 0 12px rgba(6,182,212,0.8); }
-
-  /* ---------- Overlays ---------- */
-  .overlay{
-    position:fixed; inset:0; z-index:20;
-    display:flex; align-items:center; justify-content:center;
-    background:radial-gradient(ellipse at center, rgba(0,0,0,0.75), rgba(0,0,0,0.95));
-    backdrop-filter: blur(4px);
-    transition:opacity 0.25s ease;
-    padding:20px;
-  }
-
-  .overlay-panel{
-    width:min(420px, 100%);
-    padding:32px 28px 26px;
-    border-radius:18px;
-    background:rgba(5,5,5,0.9);
-    border:1px solid var(--panel-border);
-    box-shadow: 0 0 0 1px rgba(16,185,129,0.1), 0 0 40px rgba(16,185,129,0.15);
-    text-align:center;
-  }
-
-  .title{
-    font-family:'Orbitron',sans-serif;
-    font-weight:900;
-    font-size:clamp(30px,8vw,44px);
-    letter-spacing:4px;
-    margin:0 0 4px;
-    color:#eafff5;
-    text-shadow: 0 0 10px rgba(16,185,129,0.9), 0 0 26px rgba(16,185,129,0.4);
-  }
-  .title span{ color:var(--cyan); text-shadow: 0 0 10px rgba(6,182,212,1); }
-  
-  .subtitle{ margin:0 0 22px; font-size:14px; letter-spacing:5px; text-transform:uppercase; color:#7fb8cf; opacity:0.8; }
-  .controls-hint{ font-size:15px; color:#bfe4ff; margin:0 0 18px; letter-spacing:0.5px; }
-  kbd{
-    display:inline-block; min-width:22px; padding:3px 7px; margin:0 2px;
-    border-radius:5px; border:1px solid var(--panel-border);
-    background:rgba(6,182,212,0.08); color:#e6fbff; font-family:'Orbitron',sans-serif; font-size:12px;
-  }
-
-  .btn{
-    display:block; width:100%;
-    font-family:'Orbitron',sans-serif; font-weight:700; letter-spacing:2px; font-size:15px;
-    padding:15px 18px; margin-top:12px;
-    border-radius:10px; border:1px solid rgba(16,185,129,0.7);
-    background:linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0.06));
-    color:#eafff3; cursor:pointer;
-    box-shadow:0 0 18px rgba(16,185,129,0.25);
-    transition:transform 0.1s, box-shadow 0.1s;
-  }
-  .btn:active{ transform:translateY(2px); box-shadow:0 0 8px rgba(16,185,129,0.4); }
-  .btn--alt{ border-color:var(--cyan); background:rgba(6,182,212,0.1); box-shadow:0 0 18px rgba(6,182,212,0.2); }
-
-  .fine-print{ margin:16px 0 0; font-size:12px; letter-spacing:1px; color:#6f93a8; min-height:14px; }
-
-  /* Gyro Calibrator */
-  .calibration-box{
-    margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.5); border-radius: 8px;
-    border: 1px dashed var(--cyan);
-  }
-  .tilt-meter{
-    width: 100%; height: 20px; background: #222; border-radius: 10px; position: relative; overflow: hidden; margin-top: 10px;
-  }
-  .tilt-indicator{
-    width: 4px; height: 100%; background: var(--cyan); position: absolute; left: 50%; transform: translateX(-50%);
-    box-shadow: 0 0 10px var(--cyan); transition: left 0.05s linear;
-  }
-  .tilt-center-mark{
-    width: 2px; height: 100%; background: red; position: absolute; left: 50%; transform: translateX(-50%); opacity: 0.5;
-  }
-
+  #arena { display:block; border-radius:var(--border-radius-lg); border:0.5px solid var(--color-border-tertiary); background:#0f0f1a; cursor:default; }
+  .hud { display:flex; gap:12px; margin-top:10px; align-items:center; flex-wrap:wrap; }
+  .score-card { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:8px 16px; text-align:center; min-width:80px; }
+  .score-card .lbl { font-size:11px; color:var(--color-text-secondary); }
+  .score-card .num { font-size:22px; font-weight:500; }
+  .r-num { color:#e05050; }
+  .p-num { color:#4a9eff; }
+  .s-num { color:#f0c040; }
+  .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  .controls label { font-size:13px; color:var(--color-text-secondary); }
+  .controls .row { display:flex; align-items:center; gap:6px; }
+  .controls span { font-size:13px; font-weight:500; min-width:24px; }
+  #winBanner { display:none; font-size:15px; font-weight:500; padding:6px 16px; border-radius:var(--border-radius-md); background:var(--color-background-secondary); color:var(--color-text-primary); }
 </style>
-</head>
-<body>
 
-  <canvas id="game-canvas"></canvas>
+<canvas id="arena"></canvas>
+<div class="hud">
+  <div class="score-card"><div class="lbl">Rock</div><div class="num r-num" id="rCount">0</div></div>
+  <div class="score-card"><div class="lbl">Paper</div><div class="num p-num" id="pCount">0</div></div>
+  <div class="score-card"><div class="lbl">Scissors</div><div class="num s-num" id="sCount">0</div></div>
+  <div style="flex:1"></div>
+  <div id="winBanner"></div>
+  <button id="restartBtn">Restart</button>
+</div>
+<div class="controls">
+  <div class="row"><label>Count</label><input type="range" id="countSlider" min="5" max="40" value="15" step="1"><span id="countVal">15</span></div>
+  <div class="row"><label>Speed</label><input type="range" id="speedSlider" min="1" max="6" value="3" step="1"><span id="speedVal">3</span></div>
+</div>
 
-  <div id="hud" class="hidden">
-    <div class="hud-top">
-      <div class="hud-stat">
-        <span class="hud-label">DISTANCE</span>
-        <span class="hud-value" id="score-value">0</span>
-      </div>
-      <div class="hud-stat hud-stat--right">
-        <span class="hud-label">SPEED</span>
-        <span class="hud-value" id="speed-value" style="color:var(--cyan);">0</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- START SCREEN -->
-  <div id="start-screen" class="overlay">
-    <div class="overlay-panel">
-      <h1 class="title">NEON<span>SLOPE</span></h1>
-      <p class="subtitle">shattered track</p>
-
-      <div id="desktop-controls">
-        <p class="controls-hint"><kbd>A</kbd><kbd>&larr;</kbd> steer left &nbsp;&nbsp; <kbd>D</kbd><kbd>&rarr;</kbd> steer right</p>
-        <button id="start-btn" class="btn">START RUN</button>
-      </div>
-
-      <div id="mobile-controls" class="hidden">
-        <p class="controls-hint">Tilt device to steer</p>
-        <button id="gyro-req-btn" class="btn btn--alt">1. ENABLE & CALIBRATE TILT</button>
-        <button id="start-mobile-btn" class="btn hidden">2. START RUN</button>
-      </div>
-
-      <p class="fine-print" id="system-msg">Press SPACE to jump straight in</p>
-    </div>
-  </div>
-
-  <!-- GYRO CALIBRATION SCREEN -->
-  <div id="calibration-screen" class="overlay hidden">
-    <div class="overlay-panel">
-      <h2 class="title" style="font-size:24px;">CALIBRATE TILT</h2>
-      <p class="controls-hint">Hold your phone in a comfortable playing position.</p>
-      
-      <div class="calibration-box">
-        <span id="raw-tilt-val">Raw Tilt: 0°</span>
-        <div class="tilt-meter">
-          <div class="tilt-center-mark"></div>
-          <div class="tilt-indicator" id="tilt-indicator"></div>
-        </div>
-      </div>
-
-      <button id="set-center-btn" class="btn">SET CENTER & PLAY</button>
-      <button id="fallback-touch-btn" class="btn btn--alt">USE TOUCH INSTEAD</button>
-    </div>
-  </div>
-
-  <!-- GAME OVER SCREEN -->
-  <div id="gameover-screen" class="overlay hidden">
-    <div class="overlay-panel">
-      <h2 class="title" style="font-size:32px; color:var(--red);">TERMINATED</h2>
-      <div style="display:flex; justify-content:center; gap:36px; margin:20px 0;">
-        <div class="hud-stat">
-          <span class="hud-label">DISTANCE</span>
-          <span class="hud-value" id="final-score">0</span>
-        </div>
-        <div class="hud-stat">
-          <span class="hud-label">BEST</span>
-          <span class="hud-value" id="final-best">0</span>
-        </div>
-      </div>
-      <button id="restart-btn" class="btn">RESTART</button>
-    </div>
-  </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-(() => {
-'use strict';
+const canvas = document.getElementById('arena');
+const ctx = canvas.getContext('2d');
+canvas.width = 660;
+canvas.height = 420;
 
-/* ================================================================
-   CONFIG & CONSTANTS
-================================================================ */
-const COLORS = {
-  player: 0x10b981, // Neon Green
-  track:  0x050505, // Almost black
-  edge:   0x10b981, // Bright green wireframe
-  hazard: 0xef4444, // Red
-  void:   0x000000  // Pure void[cite: 2]
-};
+const W = canvas.width, H = canvas.height;
+const TYPES = ['rock','paper','scissors'];
+const EMOJIS = { rock:'🪨', paper:'📄', scissors:'✂️' };
+const COLORS = { rock:'#e05050', paper:'#4a9eff', scissors:'#f0c040' };
+const BEATS = { rock:'scissors', scissors:'paper', paper:'rock' };
 
-const CONFIG = {
-  baseWidth: 14,
-  narrowWidth: 7,
-  playerRadius: 1.0,
+let entities = [], speed = 3, perType = 15, running = true;
 
-  baseForwardSpeed: 35, // Faster base speed
-  maxForwardSpeed: 110,
-  speedRampRate: 0.6, 
+function rand(min, max) { return min + Math.random() * (max - min); }
 
-  gravity: 75, // Heavy gravity for fast falling
-  lateralAccel: 130,
-  lateralDamping: 6.0,
-  maxLateralSpeed: 45,
-
-  genAheadIslands: 4,
-  islandBaseLength: 60,
-  gapMultiplier: 0.85, // How long gaps are relative to flight time
-
-  deathFallDepth: 40 // Fall this far below current island = death
-};
-
-/* ================================================================
-   STATE
-================================================================ */
-const state = {
-  running: false,
-  gameOver: false,
-  clock: new THREE.Clock(),
-  elapsed: 0,
-  distance: 0,
-  forwardSpeed: CONFIG.baseForwardSpeed,
-
-  player: { x:0, y:CONFIG.playerRadius, z:0, velX:0, velY:0, grounded:false },
-
-  keys: { left:false, right:false },
-  touch: { active:false, dir:0 },
-  
-  gyro: { 
-    enabled: false, 
-    rawGamma: 0, 
-    offsetGamma: 0, 
-    value: 0 
-  },
-
-  islands: [], // Array of separate track chunks
-  nextSpawnZ: 0,
-  nextSpawnY: 0,
-  islandCount: 0,
-
-  highScore: Number(localStorage.getItem('neonSlopeShatteredBest') || 0),
-  shake: 0
-};
-
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-
-/* ================================================================
-   THREE.JS SETUP
-================================================================ */
-let renderer, scene, camera, playerMesh, playerLight;
-
-function initScene(){
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(COLORS.void);
-  scene.fog = new THREE.FogExp2(COLORS.void, 0.006); // Thinner fog to see next islands
-
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 800);
-  camera.position.set(0, 8, 12);
-
-  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-canvas'), antialias:true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(window.innerWidth, window.innerHeight);
-
-  scene.add(new THREE.AmbientLight(0xffffff, 0.2));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-  dir.position.set(-10, 20, 10);
-  scene.add(dir);
-
-  playerLight = new THREE.PointLight(COLORS.player, 2.5, 30, 2);
-  scene.add(playerLight);
-
-  buildPlayer();
-  buildEnvironmentDust();
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+function spawn() {
+  entities = [];
+  running = true;
+  document.getElementById('winBanner').style.display = 'none';
+  TYPES.forEach(type => {
+    for (let i = 0; i < perType; i++) {
+      entities.push({
+        type,
+        x: rand(20, W - 20),
+        y: rand(20, H - 20),
+        vx: rand(-1, 1) * speed,
+        vy: rand(-1, 1) * speed,
+        size: 18,
+        wobble: Math.random() * Math.PI * 2,
+        convertTimer: 0
+      });
+    }
   });
 }
 
-function buildPlayer(){
-  const geo = new THREE.SphereGeometry(CONFIG.playerRadius, 24, 24);
-  const mat = new THREE.MeshStandardMaterial({
-    color: COLORS.player, emissive: COLORS.player, emissiveIntensity:0.8,
-    metalness:0.4, roughness:0.2
-  });
-  playerMesh = new THREE.Mesh(geo, mat);
-  
-  // Wireframe shell for neon look
-  const wireGeo = new THREE.SphereGeometry(CONFIG.playerRadius*1.05, 12, 12);
-  const wireMat = new THREE.MeshBasicMaterial({ color:0xffffff, wireframe:true, transparent:true, opacity:0.3 });
-  playerMesh.add(new THREE.Mesh(wireGeo, wireMat));
-  
-  scene.add(playerMesh);
-}
-
-function buildEnvironmentDust(){
-  const count = 1000;
-  const positions = new Float32Array(count*3);
-  for (let i=0;i<count;i++){
-    positions[i*3]   = (Math.random()-0.5)*300;
-    positions[i*3+1] = (Math.random()-0.5)*300;
-    positions[i*3+2] = (Math.random()-0.5)*300;
+function nearest(e) {
+  let prey = null, threat = null, dPrey = Infinity, dThreat = Infinity;
+  const myPrey = BEATS[e.type];
+  const myThreat = BEATS[BEATS[e.type]];
+  for (const o of entities) {
+    if (o === e) continue;
+    const dx = o.x - e.x, dy = o.y - e.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (o.type === myPrey && d < dPrey) { dPrey = d; prey = o; }
+    if (o.type === myThreat && d < dThreat) { dThreat = d; threat = o; }
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  const mat = new THREE.PointsMaterial({ color:0x33ff88, size:0.6, transparent:true, opacity:0.4 });
-  scene.add(new THREE.Points(geo, mat));
+  return { prey, threat, dPrey, dThreat };
 }
 
-/* ================================================================
-   SHATTERED ISLAND GENERATOR (GAPS & RAMPS)
-================================================================ */
-const trackMat = new THREE.MeshStandardMaterial({ color: COLORS.track, roughness: 0.7, metalness: 0.2 });
-const edgeMat = new THREE.LineBasicMaterial({ color: COLORS.edge, transparent:true, opacity:1.0, linewidth: 2 });
-const hazardMat = new THREE.MeshStandardMaterial({ color: COLORS.hazard, emissive: COLORS.hazard, emissiveIntensity:0.9 });
+function update() {
+  const s = speed * 0.6;
 
-function buildIsland(zStart, yStart, length, width, elevationDrop, curveOffset){
-  const steps = 24;
-  const positions = [];
-  const edgePts = [];
-  const indices = [];
-  const hw = width/2;
+  for (const e of entities) {
+    e.wobble += 0.08;
 
-  // Island profile: Steep drop in the middle, kicking up into a ramp at the very end
-  const yEnd = yStart - elevationDrop;
-  
-  const curve = new THREE.CubicBezierCurve3(
-    new THREE.Vector3(0, yStart, 0),
-    new THREE.Vector3(curveOffset * 0.3, yStart, -length * 0.3),
-    new THREE.Vector3(curveOffset * 0.8, yEnd - 8, -length * 0.7), // Drop lower than exit to create a swoop
-    new THREE.Vector3(curveOffset, yEnd, -length) // Kick up to yEnd
-  );
+    const { prey, threat, dPrey, dThreat } = nearest(e);
 
-  for (let i = 0; i <= steps; i++){
-    const t = i / steps;
-    const pt = curve.getPoint(t);
-    const depth = 4; // Thickness of track
-    
-    positions.push(pt.x - hw, pt.y, pt.z);
-    positions.push(pt.x + hw, pt.y, pt.z);
-    positions.push(pt.x - hw, pt.y - depth, pt.z);
-    positions.push(pt.x + hw, pt.y - depth, pt.z);
+    let ax = 0, ay = 0;
 
-    // Edges for wireframe look[cite: 2]
-    if (i < steps) {
-      const nextT = (i + 1) / steps;
-      const nextPt = curve.getPoint(nextT);
-      edgePts.push(pt.x - hw, pt.y+0.05, pt.z, nextPt.x - hw, nextPt.y+0.05, nextPt.z);
-      edgePts.push(pt.x + hw, pt.y+0.05, pt.z, nextPt.x + hw, nextPt.y+0.05, nextPt.z);
-      if (i % 3 === 0) { // Horizontal grid lines
-        edgePts.push(pt.x - hw, pt.y+0.05, pt.z, pt.x + hw, pt.y+0.05, pt.z);
+    if (prey && dPrey < 160) {
+      const dx = prey.x - e.x, dy = prey.y - e.y;
+      const d = Math.sqrt(dx*dx + dy*dy) || 1;
+      ax += (dx / d) * 0.25;
+      ay += (dy / d) * 0.25;
+    }
+    if (threat && dThreat < 130) {
+      const dx = e.x - threat.x, dy = e.y - threat.y;
+      const d = Math.sqrt(dx*dx + dy*dy) || 1;
+      ax += (dx / d) * 0.4;
+      ay += (dy / d) * 0.4;
+    }
+
+    e.vx += ax;
+    e.vy += ay;
+
+    const spd = Math.sqrt(e.vx*e.vx + e.vy*e.vy);
+    if (spd > s * 1.5) { e.vx = e.vx / spd * s * 1.5; e.vy = e.vy / spd * s * 1.5; }
+    if (spd < 0.3) { e.vx += rand(-0.3, 0.3); e.vy += rand(-0.3, 0.3); }
+
+    e.x += e.vx;
+    e.y += e.vy;
+
+    if (e.x < 18) { e.x = 18; e.vx = Math.abs(e.vx); }
+    if (e.x > W-18) { e.x = W-18; e.vx = -Math.abs(e.vx); }
+    if (e.y < 18) { e.y = 18; e.vy = Math.abs(e.vy); }
+    if (e.y > H-18) { e.y = H-18; e.vy = -Math.abs(e.vy); }
+  }
+
+  for (let i = 0; i < entities.length; i++) {
+    for (let j = i+1; j < entities.length; j++) {
+      const a = entities[i], b = entities[j];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const minD = a.size + b.size - 6;
+      if (d < minD && d > 0) {
+        if (BEATS[a.type] === b.type) {
+          b.type = a.type; b.convertTimer = 8;
+        } else if (BEATS[b.type] === a.type) {
+          a.type = b.type; a.convertTimer = 8;
+        } else {
+          const nx = dx/d, ny = dy/d;
+          const push = (minD - d) * 0.5;
+          a.x -= nx*push; a.y -= ny*push;
+          b.x += nx*push; b.y += ny*push;
+        }
       }
     }
   }
 
-  for (let i = 0; i < steps; i++){
-    const r1 = i * 4, r2 = (i + 1) * 4;
-    indices.push(r1, r1+1, r2+1,  r1, r2+1, r2);
-    indices.push(r1, r2, r2+2,    r1, r2+2, r1+2);
-    indices.push(r1+1, r1+3, r2+3, r1+1, r2+3, r2+1);
-  }
+  const counts = { rock:0, paper:0, scissors:0 };
+  for (const e of entities) counts[e.type]++;
+  document.getElementById('rCount').textContent = counts.rock;
+  document.getElementById('pCount').textContent = counts.paper;
+  document.getElementById('sCount').textContent = counts.scissors;
 
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indices);
-  geo.computeVertexNormals();
-
-  const edgeGeo = new THREE.BufferGeometry();
-  edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgePts, 3));
-
-  const mesh = new THREE.Mesh(geo, trackMat);
-  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-  
-  const group = new THREE.Group();
-  group.add(mesh); group.add(edges);
-  group.position.set(0, 0, zStart);
-
-  // Determine exit velocity tangent for physics gaps
-  const exitTangent = curve.getTangent(1.0);
-  const launchSlopeY = exitTangent.y / Math.abs(exitTangent.z);
-
-  return { zStart, zEnd: zStart - length, yStart, yEnd, curve, group, hazards: [], launchSlopeY, hw };
-}
-
-function spawnHazards(island){
-  if (state.islandCount < 2 || Math.random() < 0.3) return; // Give breathing room[cite: 2]
-  
-  const numHazards = 1 + Math.floor(Math.random() * 2);
-  for (let i = 0; i < numHazards; i++){
-    const t = 0.3 + Math.random() * 0.4; // Place in middle of island
-    const pt = island.curve.getPoint(t);
-    const size = 2.5;
-    
-    // Position constraint: don't block entire path
-    const offset = (Math.random() > 0.5 ? 1 : -1) * (island.hw - size);
-    
-    const block = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), hazardMat);
-    block.position.set(pt.x + offset, pt.y + size/2, pt.z);
-    island.group.add(block);
-    island.hazards.push({ mesh: block, size: size/2, worldX: pt.x+offset, worldY: pt.y+size/2, worldZ: island.zStart+pt.z });
+  const alive = TYPES.filter(t => counts[t] > 0);
+  if (alive.length === 1) {
+    running = false;
+    const banner = document.getElementById('winBanner');
+    banner.textContent = `${EMOJIS[alive[0]]} ${alive[0].charAt(0).toUpperCase()+alive[0].slice(1)} wins!`;
+    banner.style.display = 'block';
   }
 }
 
-function calculateNextIslandSpawn(prevIsland){
-  // Ballistic calculation to make the next island perfectly reachable
-  const Vz = state.forwardSpeed; 
-  const Vy = Vz * prevIsland.launchSlopeY; // Upward momentum from ramp
-  
-  // Decide how far the gap is (flight time)
-  const baseAirTime = (2 * Math.max(Vy, 15)) / CONFIG.gravity; 
-  const flightTime = baseAirTime * (0.8 + Math.random()*0.4); // Randomize gap distance
-  
-  const gapZ = Vz * flightTime;
-  const dropY = (Vy * flightTime) - (0.5 * CONFIG.gravity * flightTime * flightTime);
+function drawEntity(e) {
+  ctx.save();
+  ctx.translate(e.x, e.y);
 
-  // Ensure the ball lands smoothly at the start of the next island
-  const nextZ = prevIsland.zEnd - gapZ;
-  const nextY = prevIsland.yEnd + dropY;
+  const pulse = e.convertTimer > 0 ? 1 + e.convertTimer * 0.08 : 1;
+  e.convertTimer = Math.max(0, e.convertTimer - 1);
+  ctx.scale(pulse, pulse);
 
-  return { nextZ, nextY };
+  ctx.font = `${e.size * 1.4}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const glow = COLORS[e.type];
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 12;
+  ctx.fillText(EMOJIS[e.type], 0, 0);
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
 }
 
-function manageIslands(){
-  // Initial generation
-  if (state.islands.length === 0){
-    const startIsland = buildIsland(0, 0, 80, CONFIG.baseWidth, 0, 0); // Flat start
-    state.islands.push(startIsland);
-    scene.add(startIsland.group);
-    state.nextSpawnZ = startIsland.zEnd;
-    state.nextSpawnY = startIsland.yEnd;
-    state.islandCount++;
+function drawBg() {
+  ctx.fillStyle = '#0f0f1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
   }
-
-  // Generate ahead
-  while (state.islands.length < CONFIG.genAheadIslands){
-    const prev = state.islands[state.islands.length - 1];
-    
-    // Math to jump gap
-    const { nextZ, nextY } = calculateNextIslandSpawn(prev);
-    
-    // Randomize next island properties
-    const length = CONFIG.islandBaseLength + Math.random() * 40;
-    const drop = 5 + Math.random() * 25; // Much steeper drops
-    const curveOffset = (Math.random() - 0.5) * 40;
-    const width = Math.random() > 0.7 ? CONFIG.narrowWidth : CONFIG.baseWidth;
-
-    const island = buildIsland(nextZ, nextY, length, width, drop, curveOffset);
-    spawnHazards(island);
-    
-    state.islands.push(island);
-    scene.add(island.group);
-    state.islandCount++;
-  }
-
-  // Cleanup behind
-  if (state.islands[0].zEnd > state.player.z + 20){
-    const old = state.islands.shift();
-    scene.remove(old.group);
-    old.group.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+  for (let y = 0; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
   }
 }
 
-/* ================================================================
-   PHYSICS ENGINE (Gaps & Trajectories)
-================================================================ */
-function getActiveIsland(z){
-  for (let i = 0; i < state.islands.length; i++){
-    const isl = state.islands[i];
-    if (z <= isl.zStart && z >= isl.zEnd) return isl;
-  }
-  return null; // In a gap!
+function loop() {
+  drawBg();
+  if (running) update();
+  for (const e of entities) drawEntity(e);
+  requestAnimationFrame(loop);
 }
 
-function updatePhysics(dt){
-  const p = state.player;
-  
-  // Acceleration
-  state.forwardSpeed = Math.min(CONFIG.baseForwardSpeed + state.elapsed * CONFIG.speedRampRate, CONFIG.maxForwardSpeed);
+document.getElementById('restartBtn').addEventListener('click', () => spawn());
 
-  // Lateral Input
-  let steer = 0;
-  if (state.keys.left) steer = -1;
-  else if (state.keys.right) steer = 1;
-  else if (state.gyro.enabled) steer = state.gyro.value;
-  else if (state.touch.active) steer = state.touch.dir;
-
-  p.velX += steer * CONFIG.lateralAccel * dt;
-  p.velX -= p.velX * Math.min(CONFIG.lateralDamping * dt, 1);
-  p.velX = THREE.MathUtils.clamp(p.velX, -CONFIG.maxLateralSpeed, CONFIG.maxLateralSpeed);
-  
-  // Move Forward & Sideways
-  p.z -= state.forwardSpeed * dt;
-  state.distance = -p.z;
-
-  const island = getActiveIsland(p.z);
-  
-  if (island) {
-    // ON AN ISLAND: Sample ground height
-    const t = THREE.MathUtils.clamp((island.zStart - p.z) / (island.zStart - island.zEnd), 0, 1);
-    const pt = island.curve.getPoint(t);
-    const tangent = island.curve.getTangent(t);
-    
-    // Follow the curve horizontally
-    p.x += p.velX * dt;
-    
-    // Check if fell off edges[cite: 2]
-    if (Math.abs(p.x - pt.x) > island.hw + 0.5) {
-       p.grounded = false; // Fell off side
-    } else {
-       // Snap to ground y
-       const targetY = pt.y + CONFIG.playerRadius;
-       if (p.y <= targetY + 1.0 || p.grounded) { // Snap down if close
-         p.y = targetY;
-         p.velY = 0;
-         p.grounded = true;
-         
-         // At the very end of the island, launch into the gap!
-         if (t > 0.98) {
-           p.velY = state.forwardSpeed * island.launchSlopeY;
-           p.grounded = false;
-         }
-       } else {
-         p.grounded = false;
-       }
-    }
-
-    // Hazard collisions
-    for (const h of island.hazards) {
-      const dx = Math.abs(p.x - h.worldX), dy = Math.abs(p.y - h.worldY), dz = Math.abs(p.z - h.worldZ);
-      if (dx < h.size + 0.8 && dy < h.size + 0.8 && dz < h.size + 0.8) triggerGameOver();
-    }
-
-  } else {
-    // AIRBORNE IN A GAP[cite: 2]
-    p.grounded = false;
-    p.x += p.velX * dt;
-  }
-
-  // Apply Gravity whenever not grounded
-  if (!p.grounded) {
-    p.velY -= CONFIG.gravity * dt;
-    p.y += p.velY * dt;
-  }
-
-  // Death by falling into the void
-  let referenceY = island ? island.curve.getPoint((island.zStart-p.z)/(island.zStart-island.zEnd)).y : state.islands[state.islands.length-1].yStart;
-  if (p.y < referenceY - CONFIG.deathFallDepth) triggerGameOver();
-}
-
-/* ================================================================
-   CAMERA CONTROLLER
-================================================================ */
-function updateCamera(dt){
-  const p = state.player;
-  const speedRatio = state.forwardSpeed / CONFIG.maxForwardSpeed;
-  
-  // Dynamic FOV for speed sensation
-  camera.fov = THREE.MathUtils.lerp(camera.fov, 70 + speedRatio * 25, dt * 5);
-  camera.updateProjectionMatrix();
-
-  // Camera follows above and behind
-  const targetX = p.x * 0.5;
-  let targetY = p.y + 6 + speedRatio * 2;
-  const targetZ = p.z + 14 + speedRatio * 4;
-
-  // Prevent camera dipping too violently during steep drops
-  camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, dt * 8);
-  camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, dt * 6);
-  camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, dt * 10);
-
-  // Look ahead at the track
-  const lookAtTarget = new THREE.Vector3(p.x, p.y - 2, p.z - 15);
-  camera.lookAt(lookAtTarget);
-
-  // Screen shake
-  if (state.shake > 0){
-    camera.position.x += (Math.random()-0.5)*state.shake;
-    camera.position.y += (Math.random()-0.5)*state.shake;
-    state.shake -= dt * 2;
-  }
-}
-
-/* ================================================================
-   UI & GAME FLOW
-================================================================ */
-const UI = {
-  score: document.getElementById('score-value'),
-  speed: document.getElementById('speed-value'),
-  hud: document.getElementById('hud'),
-  startScreen: document.getElementById('start-screen'),
-  calibrationScreen: document.getElementById('calibration-screen'),
-  gameOverScreen: document.getElementById('gameover-screen')
-};
-
-function startGame(){
-  UI.startScreen.classList.add('hidden');
-  UI.calibrationScreen.classList.add('hidden');
-  UI.gameOverScreen.classList.add('hidden');
-  UI.hud.classList.remove('hidden');
-  
-  state.islands.forEach(isl => { scene.remove(isl.group); isl.group.traverse(c => { if(c.geometry) c.geometry.dispose(); }); });
-  state.islands = [];
-  state.islandCount = 0;
-  state.distance = 0;
-  state.elapsed = 0;
-  state.forwardSpeed = CONFIG.baseForwardSpeed;
-  
-  state.player = { x:0, y:CONFIG.playerRadius+2, z:0, velX:0, velY:0, grounded:false };
-  
-  manageIslands();
-  
-  state.running = true;
-  state.gameOver = false;
-  state.clock.start();
-}
-
-function triggerGameOver(){
-  if (state.gameOver) return;
-  state.gameOver = true; state.running = false; state.shake = 1.0;
-  
-  const dist = Math.floor(state.distance);
-  if (dist > state.highScore){
-    state.highScore = dist;
-    localStorage.setItem('neonSlopeShatteredBest', state.highScore);
-  }
-  
-  document.getElementById('final-score').textContent = dist;
-  document.getElementById('final-best').textContent = state.highScore;
-  
-  UI.hud.classList.add('hidden');
-  setTimeout(() => UI.gameOverScreen.classList.remove('hidden'), 500);
-}
-
-/* ================================================================
-   GYROSCOPE CALIBRATION & INPUT
-================================================================ */
-function handleOrientation(event){
-  if (event.gamma === null) return;
-  state.gyro.rawGamma = event.gamma;
-  
-  // Calculate calibrated value
-  let adjusted = event.gamma - state.gyro.offsetGamma;
-  
-  // Deadzone and clamp
-  const deadzone = 4;
-  const maxTilt = 25;
-  let val = 0;
-  if (Math.abs(adjusted) > deadzone){
-    val = (Math.abs(adjusted) - deadzone) / (maxTilt - deadzone) * Math.sign(adjusted);
-  }
-  state.gyro.value = THREE.MathUtils.clamp(val, -1, 1);
-
-  // Update calibration UI visually
-  if (!UI.calibrationScreen.classList.contains('hidden')){
-    document.getElementById('raw-tilt-val').textContent = `Raw Tilt: ${Math.round(event.gamma)}°`;
-    const indicator = document.getElementById('tilt-indicator');
-    let pct = 50 + (adjusted / 45) * 50; 
-    indicator.style.left = `${THREE.MathUtils.clamp(pct, 0, 100)}%`;
-  }
-}
-
-function requestGyroPermission(){
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
-    DeviceOrientationEvent.requestPermission()
-      .then(permissionState => {
-        if (permissionState === 'granted') openCalibration();
-        else alert('Tilt permission denied. Using touch controls.');
-      })
-      .catch(console.error);
-  } else {
-    openCalibration(); // Android/older devices
-  }
-}
-
-function openCalibration(){
-  window.addEventListener('deviceorientation', handleOrientation);
-  state.gyro.enabled = true;
-  UI.startScreen.classList.add('hidden');
-  UI.calibrationScreen.classList.remove('hidden');
-}
-
-function setGyroCenter(){
-  state.gyro.offsetGamma = state.gyro.rawGamma;
-  startGame();
-}
-
-function setupInputs(){
-  // Keyboard
-  window.addEventListener('keydown', e => {
-    if(e.code==='ArrowLeft'||e.code==='KeyA') state.keys.left = true;
-    if(e.code==='ArrowRight'||e.code==='KeyD') state.keys.right = true;
-    if(e.code==='Space') {
-      if(state.gameOver) startGame();
-      else if(!state.running && UI.calibrationScreen.classList.contains('hidden')) startGame();
-    }
-  });
-  window.addEventListener('keyup', e => {
-    if(e.code==='ArrowLeft'||e.code==='KeyA') state.keys.left = false;
-    if(e.code==='ArrowRight'||e.code==='KeyD') state.keys.right = false;
-  });
-
-  // Touch fallback
-  const canvas = document.getElementById('game-canvas');
-  canvas.addEventListener('touchstart', e => { state.touch.active=true; state.touch.dir = e.touches[0].clientX < window.innerWidth/2 ? -1 : 1; }, {passive:true});
-  canvas.addEventListener('touchmove', e => { state.touch.dir = e.touches[0].clientX < window.innerWidth/2 ? -1 : 1; }, {passive:true});
-  canvas.addEventListener('touchend', () => { state.touch.active = false; state.touch.dir = 0; }, {passive:true});
-
-  // UI Buttons
-  if (isMobile) {
-    document.getElementById('desktop-controls').classList.add('hidden');
-    document.getElementById('mobile-controls').classList.remove('hidden');
-    document.getElementById('system-msg').classList.add('hidden');
-  }
-
-  document.getElementById('start-btn').addEventListener('click', startGame);
-  document.getElementById('gyro-req-btn').addEventListener('click', requestGyroPermission);
-  document.getElementById('set-center-btn').addEventListener('click', setGyroCenter);
-  document.getElementById('fallback-touch-btn').addEventListener('click', () => {
-    state.gyro.enabled = false;
-    startGame();
-  });
-  document.getElementById('restart-btn').addEventListener('click', startGame);
-}
-
-/* ================================================================
-   LOOP
-================================================================ */
-function animate(){
-  requestAnimationFrame(animate);
-  const dt = Math.min(state.clock.getDelta(), 0.05);
-
-  if (state.running){
-    state.elapsed += dt;
-    updatePhysics(dt);
-    manageIslands();
-    
-    UI.score.textContent = Math.floor(state.distance);
-    UI.speed.textContent = Math.floor(state.forwardSpeed * 3);
-  }
-
-  playerMesh.position.set(state.player.x, state.player.y, state.player.z);
-  playerMesh.rotation.x -= state.forwardSpeed * dt * 0.2;
-  playerMesh.rotation.z = -state.player.velX * 0.05;
-  playerLight.position.copy(playerMesh.position).add(new THREE.Vector3(0, 2, 0));
-
-  updateCamera(dt);
-  renderer.render(scene, camera);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initScene();
-  setupInputs();
-  requestAnimationFrame(animate);
+document.getElementById('countSlider').addEventListener('input', function() {
+  document.getElementById('countVal').textContent = this.value;
+  perType = +this.value;
+});
+document.getElementById('speedSlider').addEventListener('input', function() {
+  document.getElementById('speedVal').textContent = this.value;
+  speed = +this.value;
 });
 
-})();
+spawn();
+loop();
 </script>
-</body>
-</html>
