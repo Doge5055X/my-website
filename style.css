@@ -1,0 +1,354 @@
+/* Theme & Reset */
+:root {
+    --bg-color: #0c0d14;
+    --panel-bg: #151826;
+    --accent-yellow: #facc15;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: rgba(255, 255, 255, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Fredoka', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* Ad Banners styling to maximize realistic monetization layout */
+.ad-banner {
+    background: #11131d;
+    border: 1px dashed var(--border-color);
+    text-align: center;
+    padding: 6px;
+    font-size: 11px;
+    z-index: 100;
+}
+
+.top-ad {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.bottom-ad {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #0f111a;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+}
+
+.ad-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: #64748b;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.ad-label a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+}
+
+.ad-content a {
+    color: var(--accent-yellow);
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+/* Main Layout Structure */
+.main-container {
+    display: flex;
+    flex: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 20px 10px 60px 10px;
+    gap: 20px;
+}
+
+.sidebar {
+    width: 220px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        display: none;
+    }
+}
+
+.ad-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.ad-body h3 {
+    font-size: 14px;
+    color: var(--accent-pink);
+    margin: 8px 0 4px 0;
+}
+
+.ad-body p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.ad-btn {
+    background: var(--accent-pink);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.ad-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Arcade Hub Center */
+.arcade-hub {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-banner {
+    text-align: center;
+}
+
+.header-banner h1 {
+    font-size: 28px;
+    background: linear-gradient(90deg, var(--accent-yellow), var(--accent-pink), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(250, 204, 21, 0.2);
+}
+
+.header-banner p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Stats Counter Bar */
+.stats-bar {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 500px;
+    justify-content: center;
+}
+
+.stat-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-align: center;
+    flex: 1;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-yellow);
+}
+
+.stat-value.money {
+    color: #4ade80;
+}
+
+/* Big Clicker Game Area */
+.game-arena {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.clicker-display {
+    position: relative;
+    display: inline-block;
+}
+
+.boredom-button {
+    background: linear-gradient(135deg, #f59e0b, #ec4899);
+    border: none;
+    border-radius: 50%;
+    width: 180px;
+    height: 180px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.4);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    outline: none;
+    position: relative;
+    z-index: 2;
+}
+
+.boredom-button:active {
+    transform: scale(0.92);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
+}
+
+.btn-icon {
+    font-size: 40px;
+    margin-bottom: 5px;
+}
+
+.btn-text {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.hint-text {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Mini Games Grid */
+.mini-games-section {
+    width: 100%;
+    max-width: 600px;
+}
+
+.mini-games-section h2 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--text-main);
+    text-align: center;
+}
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.game-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-card:hover {
+    border-color: var(--accent-cyan);
+    transform: translateY(-3px);
+    background: #1a1e30;
+}
+
+.gc-icon {
+    font-size: 24px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.game-card h3 {
+    font-size: 13px;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.game-card p {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+/* Popup Modal System */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    padding: 30px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.close-modal:hover {
+    color: white;
+}
