@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Clash Arena — Rock Paper Scissors Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void-900:#06060b;
+    --void-800:#0d0d17;
+    --panel: rgba(16,16,26,0.62);
+    --panel-strong: rgba(16,16,26,0.82);
+    --panel-border: rgba(255,255,255,0.09);
+    --text-primary:#f2f2f7;
+    --text-secondary:#8c8ca3;
+    --rock:#ff5b5b;
+    --paper:#4ea8ff;
+    --scissors:#ffcc4d;
+    --pulse:#8b7fff;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--void-900);
+    overflow:hidden; position:fixed; inset:0;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior:none;
+    font-family:'Inter',system-ui,sans-serif;
+  }
+  #app{ position:fixed; inset:0; }
+  #arena{ position:absolute; inset:0; display:block; touch-action:none; }
+
+  /* ---------- top HUD ---------- */
+  .hud-top{
+    position:fixed; top:0; left:0; right:0; z-index:5;
+    display:flex; align-items:center; justify-content:center; gap:16px;
+    padding: calc(16px + env(safe-area-inset-top)) 16px 28px;
+    pointer-events:none;
+    background:linear-gradient(to bottom, rgba(6,6,11,0.6), rgba(6,6,11,0));
+  }
+  .wordmark{
+    font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:13px;
+    letter-spacing:0.16em; color:var(--pulse); white-space:nowrap;
+    text-shadow:0 0 16px rgba(139,127,255,0.5);
+  }
+  .territory{
+    display:flex; width:min(520px, 62vw); height:34px;
+    border-radius:999px; overflow:hidden;
+    background:rgba(255,255,255,0.05);
+    border:1px solid var(--panel-border);
+    box-shadow:0 8px 24px rgba(0,0,0,0.35);
+  }
+  .segment{
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    min-width:0; overflow:hidden; white-space:nowrap;
+    transition:flex-grow .5s cubic-bezier(.2,.8,.2,1), opacity .3s ease;
+    font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:13px;
+    color:#06060b;
+  }
+  .segment .emoji{ font-size:14px; }
+  .segment.rock{ background:var(--rock); }
+  .segment.paper{ background:var(--paper); }
+  .segment.scissors{ background:var(--scissors); }
+  .segment.zero{ opacity:0; }
+
+  @media (max-width:480px){
+    .wordmark{ display:none; }
+    .territory{ width:78vw; }
+  }
+
+  /* ---------- floating dock ---------- */
+  .dock{
+    position:fixed; left:0; right:0; z-index:5;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    display:flex; justify-content:space-between;
+    padding:0 20px; pointer-events:none;
+  }
+  .fab{
+    pointer-events:auto;
+    width:52px; height:52px; border-radius:50%;
+    background:var(--panel); backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    border:1px solid var(--panel-border);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-primary); cursor:pointer;
+    box-shadow:0 10px 28px rgba(0,0,0,0.4);
+    transition:transform .15s ease, background .15s ease;
+  }
+  .fab svg{ width:22px; height:22px; }
+  .fab:hover{ transform:translateY(-2px); background:rgba(139,127,255,0.2); }
+  .fab:active{ transform:translateY(0) scale(0.94); }
+  .fab:focus-visible{ outline:2px solid var(--pulse); outline-offset:3px; }
+
+  /* ---------- settings sheet ---------- */
+  .scrim{
+    position:fixed; inset:0; z-index:15;
+    background:rgba(6,6,11,0.5); backdrop-filter:blur(2px);
+    opacity:0; pointer-events:none; transition:opacity .3s ease;
+  }
+  .scrim.open{ opacity:1; pointer-events:auto; }
+
+  .sheet{
+    position:fixed; left:50%; bottom:0; z-index:20;
+    width:min(420px, 92vw);
+    transform:translate(-50%, 115%);
+    background:var(--panel-strong); backdrop-filter:blur(26px) saturate(160%);
+    -webkit-backdrop-filter:blur(26px) saturate(160%);
+    border:1px solid var(--panel-border); border-bottom:none;
+    border-radius:22px 22px 0 0;
+    padding:10px 22px calc(24px + env(safe-area-inset-bottom));
+    box-shadow:0 -16px 48px rgba(0,0,0,0.45);
+    transition:transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  .sheet.open{ transform:translate(-50%, 0); }
+  .sheet-handle{ width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:6px auto 16px; }
+  .sheet h2{
+    font-family:'Chakra Petch',sans-serif; font-size:15px; font-weight:600;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--text-primary); margin:0 0 18px;
+  }
+  .control-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+  .control-row .clabel{ width:82px; flex-shrink:0; font-size:14px; color:var(--text-secondary); }
+  .control-row .cval{ width:26px; text-align:right; font-family:'Chakra Petch',sans-serif; font-weight:600; color:var(--text-primary); }
+  .control-row input[type=range]{ flex:1; }
+
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; height:4px; border-radius:2px;
+    background:rgba(255,255,255,0.14); outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+    background:var(--pulse); border:3px solid var(--void-800);
+    box-shadow:0 0 0 4px rgba(139,127,255,0.22); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; background:var(--pulse);
+    border:3px solid var(--void-800); cursor:pointer;
+  }
+
+  .btn-close{
+    width:100%; padding:13px; margin-top:2px; border-radius:13px;
+    border:1px solid var(--panel-border); background:rgba(139,127,255,0.12);
+    color:var(--pulse); font-family:'Inter'; font-weight:600; font-size:14px; cursor:pointer;
+    transition:background .15s ease;
+  }
+  .btn-close:hover{ background:rgba(139,127,255,0.22); }
+
+  /* ---------- win overlay ---------- */
+  .win-overlay{
+    position:fixed; inset:0; z-index:30;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(6,6,11,0.68); backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    opacity:0; pointer-events:none; transition:opacity .4s ease;
+  }
+  .win-overlay.show{ opacity:1; pointer-events:auto; }
+  .win-card{
+    width:90vw; max-width:340px; text-align:center;
+    background:var(--panel-strong); border:1px solid var(--panel-border);
+    border-radius:26px; padding:42px 34px;
+    box-shadow:0 30px 70px rgba(0,0,0,0.55);
+    transform:scale(0.9); transition:transform .45s cubic-bezier(.2,.8,.2,1);
+  }
+  .win-overlay.show .win-card{ transform:scale(1); }
+  .win-emoji{ font-size:60px; line-height:1; margin-bottom:14px; }
+  .win-title{
+    font-family:'Chakra Petch',sans-serif; font-weight:700; font-size:26px;
+    letter-spacing:0.06em; margin-bottom:10px; text-transform:uppercase;
+  }
+  .win-sub{ font-size:13.5px; color:var(--text-secondary); margin:0 0 26px; line-height:1.5; }
+  .btn-primary{
+    padding:13px 34px; border:none; border-radius:13px; cursor:pointer;
+    font-family:'Inter'; font-weight:700; font-size:15px; color:#06060b;
+    background:var(--pulse); box-shadow:0 10px 28px rgba(139,127,255,0.4);
+    transition:transform .15s ease;
+  }
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-primary:active{ transform:translateY(0); }
+
+  @media (prefers-reduced-motion: reduce){
+    .segment, .sheet, .scrim, .win-overlay, .win-card, .fab{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="arena"></canvas>
+
+  <div class="hud-top">
+    <div class="wordmark">⌁ CLASH ARENA</div>
+    <div class="territory" id="territory" aria-hidden="true">
+      <div class="segment rock" id="segRock"><span class="emoji">🪨</span><span id="rCount">0</span></div>
+      <div class="segment paper" id="segPaper"><span class="emoji">📄</span><span id="pCount">0</span></div>
+      <div class="segment scissors" id="segScissors"><span class="emoji">✂️</span><span id="sCount">0</span></div>
+    </div>
+  </div>
+
+  <div class="dock">
+    <button class="fab" id="restartBtn" aria-label="Restart battle" title="Restart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+    </button>
+    <button class="fab" id="settingsBtn" aria-label="Battle settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="Battle settings">
+    <div class="sheet-handle"></div>
+    <h2>Battle Settings</h2>
+    <label class="control-row">
+      <span class="clabel">Population</span>
+      <input type="range" id="countSlider" min="5" max="40" value="15" step="1">
+      <span class="cval" id="countVal">15</span>
+    </label>
+    <label class="control-row">
+      <span class="clabel">Speed</span>
+      <input type="range" id="speedSlider" min="1" max="6" value="3" step="1">
+      <span class="cval" id="speedVal">3</span>
+    </label>
+    <button class="btn-close" id="closeSheet">Done</button>
+  </div>
+
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-card">
+      <div class="win-emoji" id="winEmoji">🪨</div>
+      <div class="win-title" id="winTitle">Rock wins</div>
+      <p class="win-sub">The arena has been claimed. Run it back?</p>
+      <button class="btn-primary" id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('arena');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const TYPES = ['rock','paper','scissors'];
+  const EMOJIS = { rock:'🪨', paper:'📄', scissors:'✂️' };
+  const COLORS = { rock:'#ff5b5b', paper:'#4ea8ff', scissors:'#ffcc4d' };
+  const BEATS  = { rock:'scissors', scissors:'paper', paper:'rock' };
+
+  let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let entities = [], particles = [];
+  let speed = 3, perType = 15, running = true, size = 22, gridSpacing = 44;
+  let hudFrame = 0;
+
+  function rand(a,b){ return a + Math.random() * (b - a); }
+
+  function resizeCanvas(preserve){
+    const oldW = W, oldH = H;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    size = Math.max(16, Math.min(30, Math.min(W, H) / 20));
+    gridSpacing = Math.max(32, Math.min(60, Math.min(W, H) / 12));
+    if (preserve && oldW && oldH && entities.length){
+      const sx = W / oldW, sy = H / oldH;
+      for (const e of entities){ e.x *= sx; e.y *= sy; }
+    }
+  }
+
+  function spawn(){
+    entities = [];
+    particles = [];
+    running = true;
+    document.getElementById('winOverlay').classList.remove('show');
+    TYPES.forEach(type => {
+      for (let i = 0; i < perType; i++){
+        entities.push({
+          type,
+          x: rand(size*1.5, W - size*1.5),
+          y: rand(size*1.5, H - size*1.5),
+          vx: rand(-1,1) * speed,
+          vy: rand(-1,1) * speed,
+          wobble: Math.random() * Math.PI * 2,
+          convertTimer: 0
+        });
+      }
+    });
+  }
+
+  function nearest(e){
+    let prey = null, threat = null, dPrey = Infinity, dThreat = Infinity;
+    const myPrey = BEATS[e.type];
+    const myThreat = BEATS[BEATS[e.type]];
+    for (const o of entities){
+      if (o === e) continue;
+      const dx = o.x - e.x, dy = o.y - e.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (o.type === myPrey && d < dPrey){ dPrey = d; prey = o; }
+      if (o.type === myThreat && d < dThreat){ dThreat = d; threat = o; }
+    }
+    return { prey, threat, dPrey, dThreat };
+  }
+
+  function spawnBurst(x, y, color){
+    if (reduceMotion) return;
+    for (let i = 0; i < 7; i++){
+      const a = Math.random() * Math.PI * 2;
+      const sp = rand(1, 3.2);
+      particles.push({ x, y, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: 1, color });
+    }
+  }
+
+  function updateParticles(){
+    for (let i = particles.length - 1; i >= 0; i--){
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= 0.94; p.vy *= 0.94;
+      p.life -= 0.045;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  function drawParticles(){
+    for (const p of particles){
+      ctx.globalAlpha = Math.max(p.life, 0);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function update(){
+    const s = speed * 0.6;
+
+    for (const e of entities){
+      e.wobble += 0.08;
+      const { prey, threat, dPrey, dThreat } = nearest(e);
+      let ax = 0, ay = 0;
+
+      if (prey && dPrey < 170){
+        const dx = prey.x - e.x, dy = prey.y - e.y;
+        const d = Math.sqrt(dx*dx + dy*dy) || 1;
+        ax += (dx/d) * 0.25; ay += (dy/d) * 0.25;
+      }
+      if (threat && dThreat < 140){
+        const dx = e.x - threat.x, dy = e.y - threat.y;
+        const d = Math.sqrt(dx*dx + dy*dy) || 1;
+        ax += (dx/d) * 0.4; ay += (dy/d) * 0.4;
+      }
+
+      e.vx += ax; e.vy += ay;
+      const spd = Math.sqrt(e.vx*e.vx + e.vy*e.vy);
+      if (spd > s * 1.5){ e.vx = e.vx/spd * s * 1.5; e.vy = e.vy/spd * s * 1.5; }
+      if (spd < 0.3){ e.vx += rand(-0.3,0.3); e.vy += rand(-0.3,0.3); }
+
+      e.x += e.vx; e.y += e.vy;
+
+      const pad = size;
+      if (e.x < pad){ e.x = pad; e.vx = Math.abs(e.vx); }
+      if (e.x > W - pad){ e.x = W - pad; e.vx = -Math.abs(e.vx); }
+      if (e.y < pad){ e.y = pad; e.vy = Math.abs(e.vy); }
+      if (e.y > H - pad){ e.y = H - pad; e.vy = -Math.abs(e.vy); }
+    }
+
+    for (let i = 0; i < entities.length; i++){
+      for (let j = i+1; j < entities.length; j++){
+        const a = entities[i], b = entities[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        const minD = size * 1.7;
+        if (d < minD && d > 0){
+          if (BEATS[a.type] === b.type){
+            spawnBurst(b.x, b.y, COLORS[a.type]);
+            b.type = a.type; b.convertTimer = 8;
+          } else if (BEATS[b.type] === a.type){
+            spawnBurst(a.x, a.y, COLORS[b.type]);
+            a.type = b.type; a.convertTimer = 8;
+          } else {
+            const nx = dx/d, ny = dy/d;
+            const push = (minD - d) * 0.5;
+            a.x -= nx*push; a.y -= ny*push;
+            b.x += nx*push; b.y += ny*push;
+          }
+        }
+      }
+    }
+
+    updateParticles();
+
+    const counts = { rock:0, paper:0, scissors:0 };
+    for (const e of entities) counts[e.type]++;
+
+    hudFrame++;
+    if (hudFrame % 6 === 0){
+      updateHud(counts);
+    }
+
+    const alive = TYPES.filter(t => counts[t] > 0);
+    if (alive.length === 1 && running){
+      updateHud(counts);
+      running = false;
+      showWin(alive[0]);
+    }
+  }
+
+  function updateHud(counts){
+    document.getElementById('rCount').textContent = counts.rock;
+    document.getElementById('pCount').textContent = counts.paper;
+    document.getElementById('sCount').textContent = counts.scissors;
+    const total = Math.max(counts.rock + counts.paper + counts.scissors, 1);
+    const segR = document.getElementById('segRock');
+    const segP = document.getElementById('segPaper');
+    const segS = document.getElementById('segScissors');
+    segR.style.flexGrow = counts.rock; segR.classList.toggle('zero', counts.rock === 0);
+    segP.style.flexGrow = counts.paper; segP.classList.toggle('zero', counts.paper === 0);
+    segS.style.flexGrow = counts.scissors; segS.classList.toggle('zero', counts.scissors === 0);
+  }
+
+  function showWin(type){
+    document.getElementById('winEmoji').textContent = EMOJIS[type];
+    document.getElementById('winTitle').textContent = type.charAt(0).toUpperCase() + type.slice(1) + ' wins';
+    document.getElementById('winTitle').style.color = COLORS[type];
+    document.getElementById('winOverlay').classList.add('show');
+  }
+
+  function drawBg(){
+    ctx.fillStyle = '#06060b';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += gridSpacing){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += gridSpacing){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+  }
+
+  function drawVignette(){
+    const grd = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.25, W/2, H/2, Math.max(W,H)*0.72);
+    grd.addColorStop(0, 'rgba(0,0,0,0)');
+    grd.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawEntity(e){
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    const pulse = e.convertTimer > 0 ? 1 + e.convertTimer * 0.08 : 1;
+    e.convertTimer = Math.max(0, e.convertTimer - 1);
+    ctx.scale(pulse, pulse);
+
+    ctx.font = `${size * 1.35}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (!reduceMotion){
+      ctx.shadowColor = COLORS[e.type];
+      ctx.shadowBlur = entities.length > 70 ? 6 : 14;
+    }
+    ctx.fillText(EMOJIS[e.type], 0, 0);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  function loop(){
+    if (!document.hidden){
+      drawBg();
+      if (running) update();
+      for (const e of entities) drawEntity(e);
+      drawParticles();
+      drawVignette();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- resize ----------
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => resizeCanvas(true), 80);
+  });
+  window.addEventListener('orientationchange', () => resizeCanvas(true));
+
+  // ---------- controls ----------
+  document.getElementById('restartBtn').addEventListener('click', () => spawn());
+  document.getElementById('playAgainBtn').addEventListener('click', () => spawn());
+
+  const sheet = document.getElementById('sheet');
+  const scrim = document.getElementById('scrim');
+  function openSheet(){ sheet.classList.add('open'); scrim.classList.add('open'); }
+  function closeSheet(){ sheet.classList.remove('open'); scrim.classList.remove('open'); }
+  document.getElementById('settingsBtn').addEventListener('click', openSheet);
+  document.getElementById('closeSheet').addEventListener('click', closeSheet);
+  scrim.addEventListener('click', closeSheet);
+
+  document.getElementById('countSlider').addEventListener('input', function(){
+    document.getElementById('countVal').textContent = this.value;
+    perType = +this.value;
+  });
+  document.getElementById('speedSlider').addEventListener('input', function(){
+    document.getElementById('speedVal').textContent = this.value;
+    speed = +this.value;
+  });
+
+  // ---------- boot ----------
+  resizeCanvas(false);
+  spawn();
+  loop();
+})();
+</script>
+</body>
+</html>
