@@ -1,1596 +1,501 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>KUSHAL — Morph</title>
-
-<style>
-* {
-    box-sizing: border-box;
-}
-
-html,
-body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-}
-
-body {
-    display: grid;
-    place-items: center;
-    overflow: hidden;
-
-    background:
-        radial-gradient(
-            ellipse at center,
-            #ffffff 0%,
-            #f3f3f3 45%,
-            #dedede 100%
-        );
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "SF Pro Display",
-        "SF Pro Text",
-        Helvetica,
-        Arial,
-        sans-serif;
-}
-
-.frame {
-    position: relative;
-
-    width: min(1200px, 94vw);
-    aspect-ratio: 2.55 / 1;
-
-    overflow: hidden;
-
-    border-radius: 34px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.96),
-            rgba(247,247,247,.88)
-        );
-
-    box-shadow:
-        0 50px 120px rgba(0,0,0,.14),
-        0 12px 35px rgba(0,0,0,.07),
-        inset 0 1px 0 rgba(255,255,255,.95);
-}
-
-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.caption {
-    position: absolute;
-
-    left: 28px;
-    top: 24px;
-
-    font-size: 10px;
-    font-weight: 600;
-
-    letter-spacing: .18em;
-    text-transform: uppercase;
-
-    color: rgba(0,0,0,.3);
-
-    opacity: 0;
-
-    animation:
-        fadeIn 1.2s cubic-bezier(.16,1,.3,1) .4s forwards;
-}
-
-.replay {
-    position: absolute;
-
-    right: 22px;
-    bottom: 19px;
-
-    padding: 9px 15px;
-
-    border: 0;
-    border-radius: 999px;
-
-    background: rgba(0,0,0,.045);
-
-    color: rgba(0,0,0,.45);
-
-    font: 600 11px inherit;
-
-    cursor: pointer;
-
-    opacity: 0;
-
-    animation:
-        fadeIn 1.2s cubic-bezier(.16,1,.3,1) 1s forwards;
-
-    transition:
-        transform .25s ease,
-        background .25s ease,
-        color .25s ease;
-}
-
-.replay:hover {
-    background: rgba(0,0,0,.08);
-    color: #111;
-    transform: translateY(-1px);
-}
-
-.replay:active {
-    transform: scale(.94);
-}
-
-@keyframes fadeIn {
-
-    from {
-        opacity: 0;
-        transform: translateY(5px);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KUSHAL · hold to contract</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f8f8f8;
+      touch-action: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-}
-</style>
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #f8f8f8;
+      cursor: pointer;
+      touch-action: none;
+    }
+  </style>
 </head>
-
 <body>
+  <canvas id="canvas"></canvas>
 
-<div class="frame">
+  <script>
+    "use strict";
 
-    <div class="caption">
-        Morph Study · KUSHAL
-    </div>
+    /* ------------------------------------------------------------
+       CANVAS
+    ------------------------------------------------------------ */
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, DPR = 1;
 
-    <canvas id="canvas"></canvas>
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      W = rect.width;
+      H = rect.height;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = W * DPR;
+      canvas.height = H * DPR;
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-    <button class="replay" id="replay">
-        Replay
-    </button>
+    /* ------------------------------------------------------------
+       DESIGN SPACE
+    ------------------------------------------------------------ */
+    const DW = 1000, DH = 390;
+    const X = x => x * W / DW;
+    const Y = y => y * H / DH;
 
-</div>
-
-
-<script>
-"use strict";
-
-
-/* ============================================================
-   CANVAS
-   ============================================================ */
-
-const canvas =
-    document.getElementById("canvas");
-
-const ctx =
-    canvas.getContext("2d");
-
-const frame =
-    document.querySelector(".frame");
-
-const replay =
-    document.getElementById("replay");
-
-let W = 0;
-let H = 0;
-let DPR = 1;
-
-function resize() {
-
-    const rect =
-        frame.getBoundingClientRect();
-
-    W = rect.width;
-    H = rect.height;
-
-    DPR =
-        Math.min(
-            window.devicePixelRatio || 1,
-            2
-        );
-
-    canvas.width =
-        W * DPR;
-
-    canvas.height =
-        H * DPR;
-
-    canvas.style.width =
-        W + "px";
-
-    canvas.style.height =
-        H + "px";
-
-    ctx.setTransform(
-        DPR,
-        0,
-        0,
-        DPR,
-        0,
-        0
-    );
-}
-
-resize();
-
-window.addEventListener(
-    "resize",
-    resize
-);
-
-
-/* ============================================================
-   DESIGN SPACE
-   ============================================================ */
-
-const DW = 1000;
-const DH = 390;
-
-const X =
-    x => x * W / DW;
-
-const Y =
-    y => y * H / DH;
-
-
-/* ============================================================
-   MATH
-   ============================================================ */
-
-const clamp =
-    (x,a=0,b=1) =>
-        Math.max(
-            a,
-            Math.min(b,x)
-        );
-
-const lerp =
-    (a,b,t) =>
-        a+(b-a)*t;
-
-const easeOutCubic =
-    t =>
-        1-Math.pow(1-t,3);
-
-const easeInCubic =
-    t =>
-        t*t*t;
-
-const easeInOutCubic =
-    t =>
-        t < .5
-            ? 4*t*t*t
-            : 1-Math.pow(-2*t+2,3)/2;
-
-const easeOutQuint =
-    t =>
-        1-Math.pow(1-t,5);
-
-const easeInOutSine =
-    t =>
-        -(Math.cos(Math.PI*t)-1)/2;
-
-const easeOutBack =
-    t => {
-
-        const c1 = 1.70158;
-        const c3 = c1 + 1;
-
-        return 1 +
-            c3*Math.pow(t-1,3) +
-            c1*Math.pow(t-1,2);
+    const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const easeInOutCubic = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const easeOutBack = t => {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
     };
+    const easeInOutSine = t => -(Math.cos(Math.PI * t) - 1) / 2;
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
 
+    class Point {
+      constructor(x, y) { this.x = x; this.y = y; }
+    }
 
-/* ============================================================
-   POINT
-   ============================================================ */
+    /* ------------------------------------------------------------
+       MORPH STROKE
+    ------------------------------------------------------------ */
+    class MorphStroke {
+      constructor(points, options = {}) {
+        this.points = points;
+        this.phase = options.phase || 0;
+        this.seedX = options.seedX ?? 500;
+        this.seedY = options.seedY ?? 195;
+        this.seedSpread = options.seedSpread ?? 0;
+        this.seedLength = options.seedLength ?? 90;
+        this.index = options.index || 0;
+      }
+      collapsedPoint(i) {
+        const p = this.points[i];
+        const normalized = this.points.length <= 1 ? .5 : i / (this.points.length - 1);
+        const vertical = (normalized - .5) * this.seedLength;
+        const lateral = Math.sin(normalized * Math.PI * 2 + this.phase) * this.seedSpread;
+        return new Point(this.seedX + lateral, this.seedY + vertical);
+      }
+      getPoint(i, progress, mode) {
+        const final = this.points[i];
+        const collapsed = this.collapsedPoint(i);
+        if (mode === 'collapse') {
+          return {
+            x: lerp(final.x, collapsed.x, progress),
+            y: lerp(final.y, collapsed.y, progress)
+          };
+        }
+        if (mode === 'expand') {
+          const overshoot = easeOutBack(progress);
+          const dx = final.x - collapsed.x;
+          const dy = final.y - collapsed.y;
+          const perpX = -dy, perpY = dx;
+          const mag = Math.hypot(perpX, perpY) || 1;
+          const curve = Math.sin(progress * Math.PI) * 7;
+          return {
+            x: collapsed.x + dx * overshoot + (perpX / mag) * curve,
+            y: collapsed.y + dy * overshoot + (perpY / mag) * curve
+          };
+        }
+        return final;
+      }
+      drawCollapse(progress) {
+        ctx.beginPath();
+        for (let i = 0; i < this.points.length; i++) {
+          const p = this.getPoint(i, progress, 'collapse');
+          i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y));
+        }
+        ctx.stroke();
+      }
+      drawExpand(progress) {
+        ctx.beginPath();
+        for (let i = 0; i < this.points.length; i++) {
+          const p = this.getPoint(i, progress, 'expand');
+          i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y));
+        }
+        ctx.stroke();
+      }
+    }
 
-class Point {
+    /* ------------------------------------------------------------
+       KUSHAL GEOMETRY
+    ------------------------------------------------------------ */
+    const strokes = [];
+    // K
+    strokes.push(new MorphStroke([new Point(115,255), new Point(115,125)], { index: 0, phase: .1, seedLength: 130, seedSpread: 2 }));
+    strokes.push(new MorphStroke([new Point(115,190), new Point(180,125)], { index: 1, phase: 1, seedLength: 100, seedSpread: 3 }));
+    strokes.push(new MorphStroke([new Point(115,190), new Point(180,255)], { index: 2, phase: 2, seedLength: 100, seedSpread: 3 }));
+    // U
+    strokes.push(new MorphStroke([
+      new Point(220,125), new Point(220,225), new Point(226,240),
+      new Point(240,250), new Point(260,254), new Point(280,250),
+      new Point(294,240), new Point(300,225), new Point(300,125)
+    ], { index: 3, phase: .3, seedLength: 140, seedSpread: 4 }));
+    // S
+    strokes.push(new MorphStroke([
+      new Point(390,130), new Point(370,124), new Point(330,124),
+      new Point(315,138), new Point(315,168), new Point(330,180),
+      new Point(370,180), new Point(385,192), new Point(385,228),
+      new Point(370,248), new Point(330,248), new Point(315,244)
+    ], { index: 4, phase: 1.5, seedLength: 150, seedSpread: 5 }));
+    // H
+    strokes.push(new MorphStroke([new Point(430,125), new Point(430,255)], { index: 5, phase: 2, seedLength: 130 }));
+    strokes.push(new MorphStroke([new Point(500,125), new Point(500,255)], { index: 6, phase: 2.4, seedLength: 130 }));
+    strokes.push(new MorphStroke([new Point(430,188), new Point(500,188)], { index: 7, phase: 3, seedLength: 80 }));
+    // A
+    strokes.push(new MorphStroke([new Point(540,255), new Point(580,125), new Point(620,255)], { index: 8, phase: .8, seedLength: 150, seedSpread: 4 }));
+    strokes.push(new MorphStroke([new Point(560,190), new Point(600,190)], { index: 9, phase: 1.8, seedLength: 60 }));
+    // L
+    strokes.push(new MorphStroke([new Point(670,125), new Point(670,255), new Point(735,255)], { index: 10, phase: 2.5, seedLength: 150, seedSpread: 4 }));
 
-    constructor(x,y) {
-
+    /* ------------------------------------------------------------
+       PARTICLES
+    ------------------------------------------------------------ */
+    class Particle {
+      constructor(x, y, energy = 1) {
         this.x = x;
         this.y = y;
-    }
-}
-
-
-/* ============================================================
-   STROKE
-   ============================================================
-
-   Every final letter stroke has:
-
-   • a final position
-   • a central position
-   • a phase
-   • its own delay
-   • its own personality
-
-   The animation is therefore a geometric transformation,
-   not a fade between two images.
-   ============================================================ */
-
-class MorphStroke {
-
-    constructor(points, options={}) {
-
-        this.points = points;
-
-        this.delay =
-            options.delay || 0;
-
-        this.duration =
-            options.duration || 700;
-
-        this.phase =
-            options.phase || 0;
-
-        this.width =
-            options.width || 5.6;
-
-        this.opacity =
-            options.opacity ?? 1;
-
-        this.seedX =
-            options.seedX ?? 500;
-
-        this.seedY =
-            options.seedY ?? 195;
-
-        this.seedSpread =
-            options.seedSpread ?? 0;
-
-        this.seedAngle =
-            options.seedAngle ?? 0;
-
-        this.seedLength =
-            options.seedLength ?? 90;
-
-        this.index =
-            options.index || 0;
-    }
-
-
-    /*
-        Get a point's collapsed position.
-
-        Every point goes to a location on the same vertical
-        spine, but with tiny variations. This preserves the
-        impression that the original geometry has been
-        compressed rather than destroyed.
-    */
-
-    collapsedPoint(i) {
-
-        const p =
-            this.points[i];
-
-        const center =
-            this.seedY;
-
-        const normalized =
-            this.points.length <= 1
-                ? .5
-                : i/(this.points.length-1);
-
-        /*
-            Keep some of the original vertical information.
-        */
-
-        const vertical =
-            (normalized-.5) *
-            this.seedLength;
-
-        /*
-            Tiny lateral offsets give the collapsed object
-            some internal texture.
-        */
-
-        const lateral =
-            Math.sin(
-                normalized *
-                Math.PI *
-                2 +
-                this.phase
-            ) *
-            this.seedSpread;
-
-        return new Point(
-            this.seedX + lateral,
-            center + vertical
-        );
-    }
-
-
-    getPoint(i,time,mode) {
-
-        const final =
-            this.points[i];
-
-        const collapsed =
-            this.collapsedPoint(i);
-
-        /*
-            Collapse phase
-        */
-
-        if(mode === "collapse") {
-
-            return {
-                x: lerp(
-                    final.x,
-                    collapsed.x,
-                    time
-                ),
-
-                y: lerp(
-                    final.y,
-                    collapsed.y,
-                    time
-                )
-            };
-        }
-
-
-        /*
-            Expansion phase.
-
-            Use a little overshoot so the letters don't simply
-            stop at their destination.
-        */
-
-        if(mode === "expand") {
-
-            const overshoot =
-                easeOutBack(time);
-
-            /*
-                The center is treated as the launch point.
-
-                Slight curved deviation makes the expansion
-                feel organic.
-            */
-
-            const dx =
-                final.x -
-                collapsed.x;
-
-            const dy =
-                final.y -
-                collapsed.y;
-
-            const perpendicularX =
-                -dy;
-
-            const perpendicularY =
-                dx;
-
-            const magnitude =
-                Math.hypot(
-                    perpendicularX,
-                    perpendicularY
-                ) || 1;
-
-            const curve =
-                Math.sin(
-                    time *
-                    Math.PI
-                ) *
-                7;
-
-            return {
-                x:
-                    collapsed.x +
-                    dx * overshoot +
-                    perpendicularX/magnitude *
-                    curve,
-
-                y:
-                    collapsed.y +
-                    dy * overshoot +
-                    perpendicularY/magnitude *
-                    curve
-            };
-        }
-
-
-        return final;
-    }
-
-
-    drawCollapse(progress) {
-
-        ctx.beginPath();
-
-        for(
-            let i=0;
-            i<this.points.length;
-            i++
-        ) {
-
-            const p =
-                this.getPoint(
-                    i,
-                    progress,
-                    "collapse"
-                );
-
-            if(i===0)
-                ctx.moveTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-            else
-                ctx.lineTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-        }
-
-        ctx.stroke();
-    }
-
-
-    drawExpand(progress) {
-
-        ctx.beginPath();
-
-        for(
-            let i=0;
-            i<this.points.length;
-            i++
-        ) {
-
-            const p =
-                this.getPoint(
-                    i,
-                    progress,
-                    "expand"
-                );
-
-            if(i===0)
-                ctx.moveTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-            else
-                ctx.lineTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-        }
-
-        ctx.stroke();
-    }
-}
-
-
-/* ============================================================
-   FINAL LETTER GEOMETRY
-   ============================================================
-
-   Deliberately clean geometry so the morph has a strong
-   visual destination.
-   ============================================================ */
-
-const strokes = [];
-
-
-/* ---------------- K ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(115,255),
-            new Point(115,125)
-        ],
-        {
-            index:0,
-            phase:.1,
-            seedLength:130,
-            seedSpread:2
-        }
-    )
-);
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(115,190),
-            new Point(180,125)
-        ],
-        {
-            index:1,
-            phase:1,
-            seedLength:100,
-            seedSpread:3
-        }
-    )
-);
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(115,190),
-            new Point(180,255)
-        ],
-        {
-            index:2,
-            phase:2,
-            seedLength:100,
-            seedSpread:3
-        }
-    )
-);
-
-
-/* ---------------- U ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(220,125),
-            new Point(220,225),
-            new Point(226,240),
-            new Point(240,250),
-            new Point(260,254),
-            new Point(280,250),
-            new Point(294,240),
-            new Point(300,225),
-            new Point(300,125)
-        ],
-        {
-            index:3,
-            phase:.3,
-            seedLength:140,
-            seedSpread:4
-        }
-    )
-);
-
-
-/* ---------------- S ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(390,130),
-            new Point(370,124),
-            new Point(330,124),
-            new Point(315,138),
-            new Point(315,168),
-            new Point(330,180),
-            new Point(370,180),
-            new Point(385,192),
-            new Point(385,228),
-            new Point(370,248),
-            new Point(330,248),
-            new Point(315,244)
-        ],
-        {
-            index:4,
-            phase:1.5,
-            seedLength:150,
-            seedSpread:5
-        }
-    )
-);
-
-
-/* ---------------- H ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(430,125),
-            new Point(430,255)
-        ],
-        {
-            index:5,
-            phase:2,
-            seedLength:130
-        }
-    )
-);
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(500,125),
-            new Point(500,255)
-        ],
-        {
-            index:6,
-            phase:2.4,
-            seedLength:130
-        }
-    )
-);
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(430,188),
-            new Point(500,188)
-        ],
-        {
-            index:7,
-            phase:3,
-            seedLength:80
-        }
-    )
-);
-
-
-/* ---------------- A ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(540,255),
-            new Point(580,125),
-            new Point(620,255)
-        ],
-        {
-            index:8,
-            phase:.8,
-            seedLength:150,
-            seedSpread:4
-        }
-    )
-);
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(560,190),
-            new Point(600,190)
-        ],
-        {
-            index:9,
-            phase:1.8,
-            seedLength:60
-        }
-    )
-);
-
-
-/* ---------------- L ---------------- */
-
-strokes.push(
-    new MorphStroke(
-        [
-            new Point(670,125),
-            new Point(670,255),
-            new Point(735,255)
-        ],
-        {
-            index:10,
-            phase:2.5,
-            seedLength:150,
-            seedSpread:4
-        }
-    )
-);
-
-
-/* ============================================================
-   PARTICLE SYSTEM
-   ============================================================ */
-
-class Particle {
-
-    constructor(x,y,energy=1) {
-
-        this.x=x;
-        this.y=y;
-
-        const angle =
-            Math.random() *
-            Math.PI *
-            2;
-
-        const velocity =
-            (.25+
-            Math.random()*.9) *
-            energy;
-
-        this.vx =
-            Math.cos(angle) *
-            velocity;
-
-        this.vy =
-            Math.sin(angle) *
-            velocity;
-
-        this.life =
-            300+
-            Math.random()*900;
-
-        this.maxLife =
-            this.life;
-
-        this.size =
-            .35+
-            Math.random()*1.4;
-    }
-
-    update(dt) {
-
-        this.x +=
-            this.vx *
-            dt *
-            .055;
-
-        this.y +=
-            this.vy *
-            dt *
-            .055;
-
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = (.25 + Math.random() * .9) * energy;
+        this.vx = Math.cos(angle) * velocity;
+        this.vy = Math.sin(angle) * velocity;
+        this.life = 300 + Math.random() * 900;
+        this.maxLife = this.life;
+        this.size = .35 + Math.random() * 1.4;
+      }
+      update(dt) {
+        this.x += this.vx * dt * .055;
+        this.y += this.vy * dt * .055;
         this.vx *= .985;
         this.vy *= .985;
-
         this.life -= dt;
-    }
-
-    draw() {
-
-        const alpha =
-            clamp(
-                this.life /
-                this.maxLife
-            ) *
-            .25;
-
+      }
+      draw() {
+        const alpha = clamp(this.life / this.maxLife) * .25;
         ctx.beginPath();
-
-        ctx.arc(
-            X(this.x),
-            Y(this.y),
-            X(this.size),
-            0,
-            Math.PI*2
-        );
-
-        ctx.fillStyle =
-            `rgba(0,0,0,${alpha})`;
-
+        ctx.arc(X(this.x), Y(this.y), X(this.size), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,0,0,${alpha})`;
         ctx.fill();
+      }
     }
-}
-
-let particles=[];
-
-
-/* ============================================================
-   COLLAPSE / EXPANSION EVENTS
-   ============================================================ */
-
-function emitCollapseParticles(progress) {
-
-    /*
-        Particles are pulled inward.
-
-        Their positions are sampled from the letter geometry.
-    */
-
-    if(
-        Math.random() >
-        .22
-    )
-        return;
-
-    const stroke =
-        strokes[
-            Math.floor(
-                Math.random()*
-                strokes.length
-            )
-        ];
-
-    const point =
-        stroke.points[
-            Math.floor(
-                Math.random()*
-                stroke.points.length
-            )
-        ];
-
-    particles.push(
-        new Particle(
-            point.x,
-            point.y,
-            .35
-        )
-    );
-}
-
-
-function emitExpansionParticles(progress) {
-
-    /*
-        Radial energy from the central spine.
-    */
-
-    if(
-        Math.random() >
-        .30
-    )
-        return;
-
-    const angle =
-        Math.random() *
-        Math.PI *
-        2;
-
-    const radius =
-        15+
-        Math.random()*30;
-
-    particles.push(
-        new Particle(
-            500+
-            Math.cos(angle)*radius,
-
-            195+
-            Math.sin(angle)*radius,
-
-            1.7
-        )
-    );
-}
-
-
-/* ============================================================
-   CENTER SPINE
-   ============================================================ */
-
-function drawSpine(progress,mode) {
-
-    /*
-        This is not simply a new line.
-
-        It represents the mass of the collapsed letters.
-    */
-
-    let alpha=0;
-
-    if(mode==="collapse")
-        alpha=
-            easeInOutSine(progress);
-
-    if(mode==="expand")
-        alpha=
-            1-easeOutCubic(progress);
-
-    if(alpha<=0)
-        return;
-
-    ctx.save();
-
-    ctx.lineCap="round";
-
-    /*
-        Outer glow
-    */
-
-    ctx.shadowColor=
-        `rgba(0,0,0,${alpha*.22})`;
-
-    ctx.shadowBlur=
-        X(12);
-
-    ctx.strokeStyle=
-        `rgba(15,15,15,${alpha*.12})`;
-
-    ctx.lineWidth=
-        X(13);
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        X(500),
-        Y(125)
-    );
-
-    ctx.lineTo(
-        X(500),
-        Y(265)
-    );
-
-    ctx.stroke();
-
-
-    /*
-        Core
-    */
-
-    ctx.shadowBlur=0;
-
-    ctx.strokeStyle=
-        `rgba(12,12,12,${alpha*.8})`;
-
-    ctx.lineWidth=
-        X(3.2);
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        X(500),
-        Y(125)
-    );
-
-    ctx.lineTo(
-        X(500),
-        Y(265)
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-
-/* ============================================================
-   BACKGROUND
-   ============================================================ */
-
-function background() {
-
-    ctx.clearRect(
-        0,
-        0,
-        W,
-        H
-    );
-
-    const gradient =
-        ctx.createRadialGradient(
-            W*.5,
-            H*.48,
-            0,
-            W*.5,
-            H*.48,
-            Math.max(W,H)*.72
-        );
-
-    gradient.addColorStop(
-        0,
-        "#ffffff"
-    );
-
-    gradient.addColorStop(
-        1,
-        "#f4f4f4"
-    );
-
-    ctx.fillStyle=gradient;
-
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-}
-
-
-/* ============================================================
-   TIMELINE
-   ============================================================
-
-   0 ─────── 1.4s
-       Finished KUSHAL
-
-   1.4 ───── 2.8s
-       Compression
-
-   2.8 ───── 3.05s
-       Singular vertical bar
-
-   3.05 ──── 4.25s
-       EXPLOSIVE UNFOLD
-
-   4.25 ──── 5.0s
-       Settle
-   ============================================================ */
-
-const TIMELINE = {
-
-    intro: 1400,
-
-    collapse: 1400,
-
-    hold: 230,
-
-    expand: 1100,
-
-    settle: 800
-};
-
-const TOTAL =
-    TIMELINE.intro +
-    TIMELINE.collapse +
-    TIMELINE.hold +
-    TIMELINE.expand +
-    TIMELINE.settle;
-
-
-/* ============================================================
-   FINAL WORD
-   ============================================================ */
-
-function drawInitialWord() {
-
-    ctx.save();
-
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
-
-    ctx.lineWidth=
-        X(5.6);
-
-    ctx.strokeStyle=
-        "#111";
-
-    for(const stroke of strokes) {
-
+    let particles = [];
+
+    /* ------------------------------------------------------------
+       SPINE
+    ------------------------------------------------------------ */
+    function drawSpine(progress, mode) {
+      let alpha = 0;
+      if (mode === 'collapse') alpha = easeInOutSine(progress);
+      if (mode === 'expand') alpha = 1 - easeOutCubic(progress);
+      if (alpha <= 0) return;
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.shadowColor = `rgba(0,0,0,${alpha * .22})`;
+      ctx.shadowBlur = X(12);
+      ctx.strokeStyle = `rgba(15,15,15,${alpha * .12})`;
+      ctx.lineWidth = X(13);
+      ctx.beginPath();
+      ctx.moveTo(X(500), Y(125));
+      ctx.lineTo(X(500), Y(265));
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(12,12,12,${alpha * .8})`;
+      ctx.lineWidth = X(3.2);
+      ctx.beginPath();
+      ctx.moveTo(X(500), Y(125));
+      ctx.lineTo(X(500), Y(265));
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function emitCollapseParticles(progress) {
+      if (Math.random() > .22) return;
+      const stroke = strokes[Math.floor(Math.random() * strokes.length)];
+      const pt = stroke.points[Math.floor(Math.random() * stroke.points.length)];
+      particles.push(new Particle(pt.x, pt.y, .35));
+    }
+
+    function emitExpansionParticles(progress) {
+      if (Math.random() > .30) return;
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 15 + Math.random() * 30;
+      particles.push(new Particle(500 + Math.cos(angle) * radius, 195 + Math.sin(angle) * radius, 1.7));
+    }
+
+    /* ------------------------------------------------------------
+       DRAWING
+    ------------------------------------------------------------ */
+    function drawInitialWord() {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = X(5.6);
+      ctx.strokeStyle = '#111';
+      for (const stroke of strokes) {
         ctx.beginPath();
-
-        for(
-            let i=0;
-            i<stroke.points.length;
-            i++
-        ) {
-
-            const p =
-                stroke.points[i];
-
-            if(i===0)
-                ctx.moveTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-            else
-                ctx.lineTo(
-                    X(p.x),
-                    Y(p.y)
-                );
+        for (let i = 0; i < stroke.points.length; i++) {
+          const p = stroke.points[i];
+          i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y));
         }
-
         ctx.stroke();
+      }
+      ctx.restore();
     }
 
-    ctx.restore();
-}
-
-
-/* ============================================================
-   COLLAPSE
-   ============================================================ */
-
-function drawCollapse(progress) {
-
-    const eased =
-        easeInOutCubic(progress);
-
-    ctx.save();
-
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
-
-    ctx.lineWidth=
-        X(5.6);
-
-    ctx.strokeStyle=
-        "#111";
-
-    /*
-        All strokes collapse simultaneously.
-
-        But not at exactly the same speed.
-    */
-
-    for(const stroke of strokes) {
-
-        const local =
-            clamp(
-                (eased -
-                stroke.index*.008) /
-                .94
-            );
-
-        stroke.drawCollapse(
-            easeInOutCubic(local)
-        );
+    function drawCollapse(progress) {
+      const eased = easeInOutCubic(progress);
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = X(5.6);
+      ctx.strokeStyle = '#111';
+      for (const stroke of strokes) {
+        const local = clamp((eased - stroke.index * .008) / .94);
+        stroke.drawCollapse(easeInOutCubic(local));
+      }
+      ctx.restore();
+      drawSpine(progress, 'collapse');
+      emitCollapseParticles(progress);
     }
 
-    ctx.restore();
-
-    drawSpine(
-        progress,
-        "collapse"
-    );
-
-    emitCollapseParticles(
-        progress
-    );
-}
-
-
-/* ============================================================
-   EXPANSION
-   ============================================================ */
-
-function drawExpansion(progress) {
-
-    /*
-        The expansion is a wave.
-
-        Each stroke begins within a few milliseconds of
-        its neighbours, creating the illusion that the
-        central bar is exploding into the word.
-    */
-
-    ctx.save();
-
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
-
-    ctx.lineWidth=
-        X(5.6);
-
-    ctx.strokeStyle=
-        "#111";
-
-    for(const stroke of strokes) {
-
-        /*
-            Extremely tight staggering.
-        */
-
-        const stagger =
-            stroke.index *
-            .018;
-
-        const local =
-            clamp(
-                (progress-stagger) /
-                .82
-            );
-
-        const eased =
-            easeOutBack(local);
-
-        stroke.drawExpand(
-            eased
-        );
+    function drawExpansion(progress) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = X(5.6);
+      ctx.strokeStyle = '#111';
+      for (const stroke of strokes) {
+        const stagger = stroke.index * .018;
+        const local = clamp((progress - stagger) / .82);
+        stroke.drawExpand(easeOutBack(local));
+      }
+      ctx.restore();
+      drawSpine(progress, 'expand');
+      emitExpansionParticles(progress);
     }
 
-    ctx.restore();
-
-    drawSpine(
-        progress,
-        "expand"
-    );
-
-    emitExpansionParticles(
-        progress
-    );
-}
-
-
-/* ============================================================
-   FINAL SETTLE
-   ============================================================ */
-
-function drawFinal(time) {
-
-    /*
-        Very subtle breathing shadow.
-
-        The geometry itself stays perfectly still.
-    */
-
-    const breathing =
-        0.018+
-        Math.sin(time*.002)*.008;
-
-    ctx.save();
-
-    ctx.shadowColor=
-        `rgba(0,0,0,${breathing})`;
-
-    ctx.shadowBlur=
-        X(8);
-
-    ctx.lineCap="round";
-    ctx.lineJoin="round";
-
-    ctx.lineWidth=
-        X(5.6);
-
-    ctx.strokeStyle=
-        "#111";
-
-    for(const stroke of strokes) {
-
+    function drawFinal(time) {
+      const breathing = 0.018 + Math.sin(time * .002) * .008;
+      ctx.save();
+      ctx.shadowColor = `rgba(0,0,0,${breathing})`;
+      ctx.shadowBlur = X(8);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = X(5.6);
+      ctx.strokeStyle = '#111';
+      for (const stroke of strokes) {
         ctx.beginPath();
-
-        for(
-            let i=0;
-            i<stroke.points.length;
-            i++
-        ) {
-
-            const p =
-                stroke.points[i];
-
-            if(i===0)
-                ctx.moveTo(
-                    X(p.x),
-                    Y(p.y)
-                );
-            else
-                ctx.lineTo(
-                    X(p.x),
-                    Y(p.y)
-                );
+        for (let i = 0; i < stroke.points.length; i++) {
+          const p = stroke.points[i];
+          i === 0 ? ctx.moveTo(X(p.x), Y(p.y)) : ctx.lineTo(X(p.x), Y(p.y));
         }
-
         ctx.stroke();
+      }
+      ctx.restore();
     }
 
-    ctx.restore();
-}
+    /* ------------------------------------------------------------
+       ANIMATION STATE
+    ------------------------------------------------------------ */
+    const COLLAPSE_DURATION = 1400;   // ms to fully collapse
+    const EXPAND_DURATION   = 1100;   // ms to fully expand
+    const HOLD_STEADY       = 200;    // ms to linger at spine before expanding
 
+    let isPressed = false;
+    let pressStartTime = 0;
+    let releaseStartTime = 0;
+    let phase = 'idle'; // 'idle' | 'collapsing' | 'collapsed' | 'expanding' | 'settled'
+    let animId = null;
+    let lastFrameTime = 0;
 
-/* ============================================================
-   RENDER
-   ============================================================ */
+    /* ------------------------------------------------------------
+       RENDER LOOP
+    ------------------------------------------------------------ */
+    function render(now) {
+      const dt = Math.min(now - lastFrameTime, 32);
+      lastFrameTime = now;
 
-let running=false;
-let startTime=0;
-let last=0;
+      // clear
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(0, 0, W, H);
 
-function render(now) {
-
-    const elapsed =
-        now-startTime;
-
-    const dt =
-        Math.min(
-            now-last,
-            32
-        );
-
-    last=now;
-
-    background();
-
-
-    /* -----------------------------------------------
-       PHASE 1 — WORD EXISTS
-       ----------------------------------------------- */
-
-    if(
-        elapsed <
-        TIMELINE.intro
-    ) {
-
+      // ---- IDLE ----
+      if (phase === 'idle') {
         drawInitialWord();
-    }
-
-
-    /* -----------------------------------------------
-       PHASE 2 — COLLAPSE
-       ----------------------------------------------- */
-
-    else if(
-        elapsed <
-        TIMELINE.intro +
-        TIMELINE.collapse
-    ) {
-
-        const t =
-            (elapsed-
-            TIMELINE.intro) /
-            TIMELINE.collapse;
-
-        drawCollapse(
-            clamp(t)
-        );
-    }
-
-
-    /* -----------------------------------------------
-       PHASE 3 — THE SINGULARITY
-       ----------------------------------------------- */
-
-    else if(
-        elapsed <
-        TIMELINE.intro +
-        TIMELINE.collapse +
-        TIMELINE.hold
-    ) {
-
-        /*
-            Keep the bar absolutely still.
-
-            This tiny pause is important.
-
-            The brain gets a fraction of a second to register
-            that everything has become one object.
-        */
-
-        drawSpine(
-            1,
-            "collapse"
-        );
-    }
-
-
-    /* -----------------------------------------------
-       PHASE 4 — EXPANSION
-       ----------------------------------------------- */
-
-    else if(
-        elapsed <
-        TIMELINE.intro +
-        TIMELINE.collapse +
-        TIMELINE.hold +
-        TIMELINE.expand
-    ) {
-
-        const beginning =
-            TIMELINE.intro +
-            TIMELINE.collapse +
-            TIMELINE.hold;
-
-        const t =
-            (elapsed-beginning) /
-            TIMELINE.expand;
-
-        drawExpansion(
-            clamp(t)
-        );
-    }
-
-
-    /* -----------------------------------------------
-       PHASE 5 — FINAL STATE
-       ----------------------------------------------- */
-
-    else {
-
-        drawFinal(elapsed);
-
-        /*
-            A tiny final shimmer of particles.
-        */
-
-        if(
-            Math.random()<.015
-        ) {
-
-            particles.push(
-                new Particle(
-                    500+
-                    (Math.random()-.5)*300,
-
-                    195+
-                    (Math.random()-.5)*80,
-
-                    .1
-                )
-            );
+        // small random sparkle
+        if (Math.random() < 0.01) {
+          particles.push(new Particle(300 + Math.random() * 400, 150 + Math.random() * 100, 0.15));
         }
-    }
+      }
 
+      // ---- COLLAPSING ----
+      else if (phase === 'collapsing') {
+        const elapsed = now - pressStartTime;
+        const progress = clamp(elapsed / COLLAPSE_DURATION);
+        drawCollapse(progress);
+        if (progress >= 1) {
+          phase = 'collapsed';
+          pressStartTime = now; // reset for hold timer
+        }
+      }
 
-    /* -----------------------------------------------
-       PARTICLES
-       ----------------------------------------------- */
+      // ---- COLLAPSED (hold steady) ----
+      else if (phase === 'collapsed') {
+        // spine fully visible, with slight shimmer
+        drawSpine(1, 'collapse');
+        // tiny particles
+        if (Math.random() < 0.02) {
+          particles.push(new Particle(500 + (Math.random() - 0.5) * 30, 190 + Math.random() * 20, 0.1));
+        }
+        // if user releases, start expanding
+        if (!isPressed) {
+          phase = 'expanding';
+          releaseStartTime = now;
+        }
+      }
 
-    for(
-        let i=particles.length-1;
-        i>=0;
-        i--
-    ) {
+      // ---- EXPANDING ----
+      else if (phase === 'expanding') {
+        const elapsed = now - releaseStartTime;
+        const progress = clamp(elapsed / EXPAND_DURATION);
+        drawExpansion(progress);
+        if (progress >= 1) {
+          phase = 'settled';
+        }
+      }
 
-        const p=
-            particles[i];
+      // ---- SETTLED (fully expanded) ----
+      else if (phase === 'settled') {
+        drawFinal(now);
+        if (Math.random() < 0.015) {
+          particles.push(new Particle(500 + (Math.random() - 0.5) * 300, 195 + (Math.random() - 0.5) * 80, 0.1));
+        }
+        // if user presses again, go back to collapsing
+        if (isPressed) {
+          phase = 'collapsing';
+          pressStartTime = now;
+        }
+      }
 
+      // ---- PARTICLES (always) ----
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
         p.update(dt);
         p.draw();
+        if (p.life <= 0) particles.splice(i, 1);
+      }
 
-        if(
-            p.life<=0
-        ) {
+      animId = requestAnimationFrame(render);
+    }
 
-            particles.splice(
-                i,
-                1
-            );
+    /* ------------------------------------------------------------
+       START / STOP ANIMATION LOOP
+    ------------------------------------------------------------ */
+    function startLoop() {
+      if (animId) return;
+      lastFrameTime = performance.now();
+      animId = requestAnimationFrame(render);
+    }
+
+    function stopLoop() {
+      if (animId) {
+        cancelAnimationFrame(animId);
+        animId = null;
+      }
+    }
+
+    /* ------------------------------------------------------------
+       POINTER EVENTS (touch + mouse)
+    ------------------------------------------------------------ */
+    function handlePointerDown(e) {
+      e.preventDefault();
+      if (isPressed) return;
+      isPressed = true;
+      pressStartTime = performance.now();
+
+      // if settled or idle, start collapsing
+      if (phase === 'idle' || phase === 'settled') {
+        phase = 'collapsing';
+        pressStartTime = performance.now();
+        startLoop();
+      }
+      // if expanding mid-way, cancel expansion and collapse from current state?
+      else if (phase === 'expanding') {
+        // snap to collapsing from current position – we just reset
+        phase = 'collapsing';
+        pressStartTime = performance.now();
+      }
+      // if already collapsed, do nothing (hold)
+    }
+
+    function handlePointerUp(e) {
+      e.preventDefault();
+      if (!isPressed) return;
+      isPressed = false;
+
+      // if collapsing or collapsed, start expanding
+      if (phase === 'collapsing' || phase === 'collapsed') {
+        phase = 'expanding';
+        releaseStartTime = performance.now();
+        startLoop();
+      }
+      // if idle or settled, nothing
+    }
+
+    function handlePointerCancel(e) {
+      e.preventDefault();
+      // treat as pointer up
+      if (isPressed) {
+        isPressed = false;
+        if (phase === 'collapsing' || phase === 'collapsed') {
+          phase = 'expanding';
+          releaseStartTime = performance.now();
+          startLoop();
         }
+      }
     }
 
+    // --- attach events ---
+    canvas.addEventListener('pointerdown', handlePointerDown);
+    canvas.addEventListener('pointerup', handlePointerUp);
+    canvas.addEventListener('pointercancel', handlePointerCancel);
+    canvas.addEventListener('pointerleave', (e) => {
+      // if pointer leaves canvas while pressed, treat as release
+      if (isPressed) {
+        handlePointerUp(e);
+      }
+    });
 
-    if(
-        elapsed <
-        TOTAL+1000
-    ) {
+    // prevent context menu and scrolling
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-        requestAnimationFrame(
-            render
-        );
-
-    } else {
-
-        running=false;
-    }
-}
-
-
-/* ============================================================
-   START
-   ============================================================ */
-
-function start() {
-
-    particles=[];
-
-    startTime=
-        performance.now();
-
-    last=startTime;
-
-    running=true;
-
-    requestAnimationFrame(
-        render
-    );
-}
-
-
-/* ============================================================
-   REPLAY
-   ============================================================ */
-
-replay.addEventListener(
-    "click",
-    () => {
-
-        if(running)
-            return;
-
-        start();
-    }
-);
-
-
-/* ============================================================
-   GO
-   ============================================================ */
-
-start();
-
-</script>
-
+    /* ------------------------------------------------------------
+       INITIAL START — show the word immediately
+    ------------------------------------------------------------ */
+    phase = 'idle';
+    startLoop();
+  </script>
 </body>
 </html>
-```
